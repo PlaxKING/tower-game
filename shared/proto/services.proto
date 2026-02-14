@@ -1,0 +1,491 @@
+syntax = "proto3";
+
+package tower;
+
+import "game_state.proto";
+
+// =============================================================
+// GameStateService — World state management
+// =============================================================
+
+service GameStateService {
+  // Get current world state for a player
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+
+  // Sync full state (reconnection)
+  rpc SyncState(SyncStateRequest) returns (SyncStateResponse);
+
+  // Stream real-time state updates
+  rpc StreamUpdates(StreamUpdatesRequest) returns (stream StateUpdate);
+
+  // Get world cycle info (Breath of the Tower)
+  rpc GetWorldCycle(WorldCycleRequest) returns (WorldCycleState);
+}
+
+message GetStateRequest {
+  uint64 player_id = 1;
+  uint32 floor_id = 2;
+}
+
+message GetStateResponse {
+  PlayerState player = 1;
+  repeated PlayerState nearby_players = 2;
+  repeated MonsterSpawn nearby_monsters = 3;
+  WorldCycleState world_cycle = 4;
+  uint64 server_tick = 5;
+}
+
+message SyncStateRequest {
+  uint64 player_id = 1;
+  uint64 last_known_tick = 2;
+}
+
+message SyncStateResponse {
+  PlayerState player = 1;
+  repeated FloorMutation missed_mutations = 2;
+  uint64 current_tick = 3;
+}
+
+message StreamUpdatesRequest {
+  uint64 player_id = 1;
+  uint32 floor_id = 2;
+  float update_radius = 3;
+}
+
+message StateUpdate {
+  uint64 tick = 1;
+  repeated StateChange changes = 2;
+  uint64 timestamp = 3;
+}
+
+message WorldCycleRequest {
+  uint64 tower_seed = 1;
+}
+
+// =============================================================
+// CombatService — Combat logic processing
+// =============================================================
+
+service CombatService {
+  // Process a player action (attack, parry, dodge, ability)
+  rpc ProcessAction(PlayerAction) returns (ActionResult);
+
+  // Calculate damage preview (for UI tooltips)
+  rpc CalculateDamage(DamageCalcRequest) returns (DamageCalcResponse);
+
+  // Get combat state for entity
+  rpc GetCombatState(CombatStateRequest) returns (CombatStateResponse);
+
+  // Stream combat events (hits, parries, deaths)
+  rpc StreamCombatEvents(CombatEventsRequest) returns (stream CombatEvent);
+}
+
+message DamageCalcRequest {
+  uint64 attacker_id = 1;
+  uint64 defender_id = 2;
+  string weapon_id = 3;
+  string ability_id = 4;
+}
+
+message DamageCalcResponse {
+  float base_damage = 1;
+  float modified_damage = 2;
+  float crit_chance = 3;
+  float crit_damage = 4;
+  repeated DamageModifier modifiers = 5;
+}
+
+message DamageModifier {
+  string source = 1;
+  float multiplier = 2;
+  string description = 3;
+}
+
+message CombatStateRequest {
+  uint64 entity_id = 1;
+}
+
+message CombatStateResponse {
+  uint64 entity_id = 1;
+  string current_phase = 2;
+  float phase_timer = 3;
+  uint32 combo_step = 4;
+  bool can_parry = 5;
+  bool can_dodge = 6;
+  repeated ActiveStatusEffect status_effects = 7;
+}
+
+message ActiveStatusEffect {
+  string effect_name = 1;
+  float remaining_duration = 2;
+  uint32 stacks = 3;
+  repeated SemanticTag tags = 4;
+}
+
+message CombatEventsRequest {
+  uint64 player_id = 1;
+  float radius = 2;
+}
+
+message CombatEvent {
+  uint64 tick = 1;
+  CombatEventType event_type = 2;
+  uint64 source_entity = 3;
+  uint64 target_entity = 4;
+  float damage = 5;
+  Vec3 hit_position = 6;
+  Vec3 hit_direction = 7;
+  string details = 8;
+}
+
+enum CombatEventType {
+  HIT = 0;
+  CRITICAL_HIT = 1;
+  PARRY = 2;
+  PERFECT_PARRY = 3;
+  DODGE = 4;
+  BLOCK = 5;
+  MISS = 6;
+  ABILITY_CAST = 7;
+  STATUS_APPLIED = 8;
+  ENTITY_KILLED = 9;
+  ECHO_SPAWNED = 10;
+}
+
+// =============================================================
+// GenerationService — Procedural content generation
+// =============================================================
+
+service GenerationService {
+  // Generate a floor layout
+  rpc GenerateFloor(FloorRequest) returns (FloorResponse);
+
+  // Spawn monsters for a room
+  rpc SpawnMonsters(SpawnMonstersRequest) returns (SpawnMonstersResponse);
+
+  // Generate loot from a source
+  rpc GenerateLoot(LootRequest) returns (LootResponse);
+
+  // Get semantic tags for entity interaction
+  rpc QuerySemanticTags(SemanticQueryRequest) returns (SemanticQueryResponse);
+
+  // Generate procedural mesh data (for ProceduralMeshComponent)
+  rpc GenerateMeshData(MeshDataRequest) returns (MeshDataResponse);
+}
+
+message SpawnMonstersRequest {
+  uint64 tower_seed = 1;
+  uint32 floor_id = 2;
+  uint32 room_id = 3;
+  repeated SemanticTag biome_tags = 4;
+}
+
+message SpawnMonstersResponse {
+  repeated MonsterSpawn monsters = 1;
+}
+
+message LootRequest {
+  uint64 source_entity_id = 1;
+  uint64 player_id = 2;
+  repeated SemanticTag source_tags = 3;
+  repeated SemanticTag player_tags = 4;
+  float luck_modifier = 5;
+}
+
+message LootResponse {
+  repeated LootItem items = 1;
+}
+
+message LootItem {
+  string item_name = 1;
+  ItemRarity rarity = 2;
+  repeated SemanticTag tags = 3;
+  repeated EquipmentEffect effects = 4;
+  uint32 socket_count = 5;
+  repeated SocketColor socket_colors = 6;
+}
+
+message EquipmentEffect {
+  string trigger_type = 1;
+  string action_type = 2;
+  float chance = 3;
+  float value = 4;
+}
+
+message SemanticQueryRequest {
+  repeated SemanticTag query_tags = 1;
+  float similarity_threshold = 2;
+  uint32 max_results = 3;
+}
+
+message SemanticQueryResponse {
+  repeated SemanticMatch matches = 1;
+}
+
+message SemanticMatch {
+  uint64 entity_id = 1;
+  string entity_type = 2;
+  float similarity = 3;
+  repeated SemanticTag tags = 4;
+}
+
+message MeshDataRequest {
+  string mesh_type = 1;
+  uint64 seed = 2;
+  repeated SemanticTag tags = 3;
+  uint32 lod_level = 4;
+}
+
+message MeshDataResponse {
+  repeated float vertices = 1;
+  repeated uint32 indices = 2;
+  repeated float normals = 3;
+  repeated float uvs = 4;
+  repeated float colors = 5;
+  string material_id = 6;
+}
+
+// =============================================================
+// MasteryService — Skill mastery and progression
+// =============================================================
+
+service MasteryService {
+  // Track mastery XP gain
+  rpc TrackProgress(MasteryProgressRequest) returns (MasteryProgressResponse);
+
+  // Unlock a skill in mastery tree
+  rpc UnlockSkill(UnlockSkillRequest) returns (UnlockSkillResponse);
+
+  // Choose specialization branch
+  rpc ChooseSpecialization(ChooseSpecRequest) returns (ChooseSpecResponse);
+
+  // Get full mastery profile
+  rpc GetMasteryProfile(MasteryProfileRequest) returns (MasteryProfileResponse);
+
+  // Equip/unequip abilities to hotbar
+  rpc UpdateAbilityLoadout(AbilityLoadoutRequest) returns (AbilityLoadoutResponse);
+}
+
+message MasteryProgressRequest {
+  uint64 player_id = 1;
+  string domain = 2;
+  string action_type = 3;
+  float xp_amount = 4;
+}
+
+message MasteryProgressResponse {
+  string domain = 1;
+  uint32 new_tier = 2;
+  float new_xp = 3;
+  float xp_to_next = 4;
+  bool tier_up = 5;
+  repeated string newly_unlocked = 6;
+}
+
+message UnlockSkillRequest {
+  uint64 player_id = 1;
+  string domain = 2;
+  string skill_id = 3;
+}
+
+message UnlockSkillResponse {
+  bool success = 1;
+  string failure_reason = 2;
+  repeated string prerequisite_missing = 3;
+}
+
+message ChooseSpecRequest {
+  uint64 player_id = 1;
+  string domain = 2;
+  string branch_id = 3;
+}
+
+message ChooseSpecResponse {
+  bool success = 1;
+  string failure_reason = 2;
+  string combat_role = 3;
+  repeated string passive_effects = 4;
+  string ultimate_ability = 5;
+}
+
+message MasteryProfileRequest {
+  uint64 player_id = 1;
+}
+
+message MasteryProfileResponse {
+  repeated DomainProfile domains = 1;
+  repeated SpecializationInfo specializations = 2;
+  repeated SynergyInfo active_synergies = 3;
+  string primary_combat_role = 4;
+}
+
+message DomainProfile {
+  string domain_name = 1;
+  uint32 tier = 2;
+  float xp_current = 3;
+  float xp_required = 4;
+  repeated SkillNode skills = 5;
+}
+
+message SkillNode {
+  string skill_id = 1;
+  string name = 2;
+  bool unlocked = 3;
+  uint32 tier_required = 4;
+  repeated string prerequisites = 5;
+  string effect_description = 6;
+}
+
+message SpecializationInfo {
+  string branch_id = 1;
+  string domain = 2;
+  string combat_role = 3;
+  repeated string passives = 4;
+  string ultimate_name = 5;
+}
+
+message SynergyInfo {
+  string synergy_name = 1;
+  repeated string required_branches = 2;
+  string bonus_description = 3;
+}
+
+message AbilityLoadoutRequest {
+  uint64 player_id = 1;
+  repeated AbilitySlotAssignment slots = 2;
+}
+
+message AbilitySlotAssignment {
+  uint32 slot_index = 1;
+  string ability_id = 2;
+}
+
+message AbilityLoadoutResponse {
+  bool success = 1;
+  repeated string validation_errors = 2;
+  repeated AbilityState final_loadout = 3;
+}
+
+// =============================================================
+// EconomyService — Trading, crafting, economy
+// =============================================================
+
+service EconomyService {
+  // Execute a trade between players
+  rpc Trade(TradeRequest) returns (TradeResponse);
+
+  // Craft an item
+  rpc Craft(CraftRequest) returns (CraftResponse);
+
+  // List items on auction
+  rpc ListAuction(AuctionListRequest) returns (AuctionListResponse);
+
+  // Buy from auction
+  rpc BuyAuction(AuctionBuyRequest) returns (AuctionBuyResponse);
+
+  // Get player wallet
+  rpc GetWallet(WalletRequest) returns (WalletResponse);
+
+  // Gem operations (insert, remove, combine)
+  rpc GemOperation(GemOperationRequest) returns (GemOperationResponse);
+}
+
+message TradeRequest {
+  uint64 player_a = 1;
+  uint64 player_b = 2;
+  repeated ItemSlot items_from_a = 3;
+  repeated ItemSlot items_from_b = 4;
+  uint64 gold_from_a = 5;
+  uint64 gold_from_b = 6;
+}
+
+message TradeResponse {
+  bool success = 1;
+  string failure_reason = 2;
+}
+
+message CraftRequest {
+  uint64 player_id = 1;
+  string recipe_id = 2;
+  repeated string material_item_ids = 3;
+}
+
+message CraftResponse {
+  bool success = 1;
+  string failure_reason = 2;
+  LootItem crafted_item = 3;
+  float mastery_xp_gained = 4;
+}
+
+message AuctionListRequest {
+  string category = 1;
+  ItemRarity min_rarity = 2;
+  uint32 page = 3;
+  uint32 per_page = 4;
+  string sort_by = 5;
+}
+
+message AuctionListResponse {
+  repeated AuctionEntry entries = 1;
+  uint32 total_count = 2;
+}
+
+message AuctionEntry {
+  string listing_id = 1;
+  LootItem item = 2;
+  uint64 price = 3;
+  uint64 seller_id = 4;
+  string seller_name = 5;
+  uint64 expires_at = 6;
+}
+
+message AuctionBuyRequest {
+  uint64 player_id = 1;
+  string listing_id = 2;
+}
+
+message AuctionBuyResponse {
+  bool success = 1;
+  string failure_reason = 2;
+  LootItem item = 3;
+}
+
+message WalletRequest {
+  uint64 player_id = 1;
+}
+
+message WalletResponse {
+  uint64 gold = 1;
+  uint64 premium_currency = 2;
+  uint64 seasonal_currency = 3;
+}
+
+message GemOperationRequest {
+  uint64 player_id = 1;
+  oneof operation {
+    GemInsert insert = 2;
+    GemRemove remove = 3;
+    GemCombine combine = 4;
+  }
+}
+
+message GemInsert {
+  string equipment_id = 1;
+  uint32 socket_index = 2;
+  string gem_id = 3;
+}
+
+message GemRemove {
+  string equipment_id = 1;
+  uint32 socket_index = 2;
+}
+
+message GemCombine {
+  repeated string gem_ids = 1;
+}
+
+message GemOperationResponse {
+  bool success = 1;
+  string failure_reason = 2;
+  GemState result_gem = 3;
+}

@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 8779a82a43c11207ba3658003c3086a2dbfc469c127d91116f37a4c73a3b7f14 # shrinks to base_damage = 1.0, combo_step = 0, angle_id = 0
+cc 26462050f865580e9ecef313acfedc712928aef374be2ce2be2d8f4f355ba4d2 # shrinks to seed = 0, floor_id = 1
+cc a925a514bbb9a74ba33fd69c55003380f7efa65f909ac5bbb22619a6ed11ed47 # shrinks to seed = 0, floor_id = 1
+cc 405735f54f701e0ce269ccf7beea48cc4f5fc26392c73519c2844bda11d116f3 # shrinks to elapsed = 0.0

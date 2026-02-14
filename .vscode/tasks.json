@@ -1,0 +1,126 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Rust: Build (Debug)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--manifest-path", "procedural-core/Cargo.toml"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$rustc"],
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "Rust: Build (Release)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--release", "--manifest-path", "procedural-core/Cargo.toml"],
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Rust: Build DLL (cdylib)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--release", "--lib", "--manifest-path", "procedural-core/Cargo.toml"],
+      "problemMatcher": ["$rustc"],
+      "detail": "Build tower_core.dll for UE5 FFI bridge"
+    },
+    {
+      "label": "Rust: Run Bevy",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["run", "--manifest-path", "procedural-core/Cargo.toml"],
+      "presentation": { "reveal": "always", "panel": "new", "focus": true, "clear": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rust: Test All",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["test", "--manifest-path", "procedural-core/Cargo.toml"],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Rust: Test (verbose)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["test", "--manifest-path", "procedural-core/Cargo.toml", "--", "--nocapture"],
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Rust: Clippy",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["clippy", "--manifest-path", "procedural-core/Cargo.toml", "--", "-W", "clippy::all"],
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Rust: Bench",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["bench", "--manifest-path", "procedural-core/Cargo.toml"],
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Nakama: Start",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d", "nakama", "postgres"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Nakama: Stop",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["down"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Nakama: Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "nakama"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Docker: Up All",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Down All",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["down"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Blender: Export All Assets",
+      "type": "shell",
+      "command": "blender",
+      "args": ["--background", "--python", "blender/scripts/batch_export.py"],
+      "problemMatcher": [],
+      "detail": "Export all .blend models to FBX for UE5 import"
+    },
+    {
+      "label": "Blender: Validate Models",
+      "type": "shell",
+      "command": "blender",
+      "args": ["--background", "--python", "blender/scripts/validate_models.py"],
+      "problemMatcher": [],
+      "detail": "Check all models for UE5 compatibility (scale, normals, UVs)"
+    },
+    {
+      "label": "Full Build: Test + DLL",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Rust: Test All", "Rust: Build DLL (cdylib)"],
+      "problemMatcher": [],
+      "group": "build"
+    }
+  ]
+}

@@ -1,0 +1,358 @@
+{
+  "folders": [
+    {
+      "name": "Root",
+      "path": "."
+    },
+    {
+      "name": "Procedural Core (Rust/Bevy)",
+      "path": "procedural-core"
+    },
+    {
+      "name": "UE5 Client",
+      "path": "ue5-client"
+    },
+    {
+      "name": "Nakama Server",
+      "path": "nakama-server"
+    },
+    {
+      "name": "Blender Pipeline",
+      "path": "blender"
+    },
+    {
+      "name": "Shared (Proto/Schemas)",
+      "path": "shared"
+    }
+  ],
+  "settings": {
+    "window.title": "Tower Game - Hybrid Engine [${activeEditorShort}]",
+    "workbench.colorTheme": "Default Dark Modern",
+
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.minimap.enabled": false,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "editor.stickyScroll.enabled": true,
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 2000,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+
+    "files.associations": {
+      "*.ron": "rust",
+      "*.proto": "proto3",
+      "*.uproject": "json",
+      "*.uplugin": "json",
+      "*.uasset": "binary",
+      "*.umap": "binary",
+      "*.blend": "binary"
+    },
+
+    "[rust]": {
+      "editor.defaultFormatter": "rust-lang.rust-analyzer",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+      }
+    },
+    "rust-analyzer.checkOnSave": true,
+    "rust-analyzer.cargo.allFeatures": true,
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.linkedProjects": [
+      "procedural-core/Cargo.toml"
+    ],
+
+    "[cpp]": {
+      "editor.defaultFormatter": "ms-vscode.cpptools",
+      "editor.formatOnSave": false
+    },
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.includePath": [
+      "${workspaceFolder}/ue5-client/Source/**",
+      "${workspaceFolder}/ue5-client/ThirdParty/**"
+    ],
+
+    "[lua]": {
+      "editor.defaultFormatter": "sumneko.lua"
+    },
+    "Lua.diagnostics.globals": ["nk", "require", "module"],
+    "Lua.runtime.version": "Lua 5.1",
+
+    "[proto3]": {
+      "editor.defaultFormatter": "zxh404.vscode-proto3"
+    },
+
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.formatOnSave": true
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder}/blender/.venv/Scripts/python.exe",
+
+    "[yaml]": {
+      "editor.defaultFormatter": "redhat.vscode-yaml",
+      "editor.tabSize": 2
+    },
+
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/target": true,
+      "**/Binaries": true,
+      "**/Intermediate": true,
+      "**/DerivedDataCache": true,
+      "**/Saved": true,
+      "**/.git": true,
+      "**/Build": true,
+      "**/*.uasset": true,
+      "**/*.umap": true
+    },
+
+    "files.exclude": {
+      "**/.git": true,
+      "**/Intermediate": true,
+      "**/DerivedDataCache": true,
+      "**/Saved/Autosaves": true
+    },
+
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.fontSize": 13,
+
+    "docker.compose.files": [
+      "${workspaceFolder}/docker-compose.yml"
+    ],
+
+    "todo-tree.general.tags": [
+      "TODO", "FIXME", "HACK", "BUG", "PERF", "NOTE", "SEMANTIC", "GRPC"
+    ],
+    "todo-tree.highlights.customHighlight": {
+      "SEMANTIC": {
+        "icon": "link",
+        "foreground": "#9B59B6",
+        "type": "tag"
+      },
+      "PERF": {
+        "icon": "flame",
+        "foreground": "#E74C3C",
+        "type": "tag"
+      },
+      "GRPC": {
+        "icon": "plug",
+        "foreground": "#3498DB",
+        "type": "tag"
+      }
+    },
+
+    "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+    "errorLens.delay": 500
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug: Procedural Core (Bevy)",
+        "cargo": {
+          "args": ["build", "--manifest-path", "${workspaceFolder}/procedural-core/Cargo.toml"],
+          "filter": { "kind": "bin" }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}/procedural-core",
+        "env": { "RUST_BACKTRACE": "1", "RUST_LOG": "debug" }
+      },
+      {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug: gRPC Server",
+        "cargo": {
+          "args": ["build", "--manifest-path", "${workspaceFolder}/procedural-core/Cargo.toml", "--bin", "grpc_server"],
+          "filter": { "kind": "bin", "name": "grpc_server" }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}/procedural-core",
+        "env": {
+          "RUST_BACKTRACE": "1",
+          "RUST_LOG": "info",
+          "GRPC_HOST": "0.0.0.0",
+          "GRPC_PORT": "50051"
+        }
+      },
+      {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Test: Procedural Core",
+        "cargo": {
+          "args": ["test", "--no-run", "--manifest-path", "${workspaceFolder}/procedural-core/Cargo.toml"],
+          "filter": { "kind": "lib" }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder}/procedural-core",
+        "env": { "RUST_BACKTRACE": "1" }
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Full Stack: Core + gRPC",
+        "configurations": ["Debug: Procedural Core (Bevy)", "Debug: gRPC Server"]
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Rust: Build (Debug)",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build", "--manifest-path", "procedural-core/Cargo.toml"],
+        "group": { "kind": "build", "isDefault": true },
+        "problemMatcher": ["$rustc"],
+        "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+      },
+      {
+        "label": "Rust: Build (Release)",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build", "--release", "--manifest-path", "procedural-core/Cargo.toml"],
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Rust: Build DLL (cdylib)",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build", "--release", "--lib", "--manifest-path", "procedural-core/Cargo.toml"],
+        "problemMatcher": ["$rustc"],
+        "presentation": { "reveal": "always" }
+      },
+      {
+        "label": "Rust: Run Bevy",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["run", "--manifest-path", "procedural-core/Cargo.toml"],
+        "presentation": { "reveal": "always", "panel": "new", "focus": true, "clear": true },
+        "problemMatcher": []
+      },
+      {
+        "label": "Rust: Test All",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["test", "--manifest-path", "procedural-core/Cargo.toml"],
+        "group": { "kind": "test", "isDefault": true },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Rust: Test (verbose)",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["test", "--manifest-path", "procedural-core/Cargo.toml", "--", "--nocapture"],
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Rust: Clippy",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["clippy", "--manifest-path", "procedural-core/Cargo.toml", "--", "-W", "clippy::all"],
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Rust: Bench",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["bench", "--manifest-path", "procedural-core/Cargo.toml"],
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Proto: Generate Rust",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build", "--manifest-path", "procedural-core/Cargo.toml", "--features", "grpc"],
+        "problemMatcher": ["$rustc"],
+        "detail": "Triggers prost/tonic build.rs to regenerate proto bindings"
+      },
+      {
+        "label": "Nakama: Start",
+        "type": "shell",
+        "command": "docker-compose",
+        "args": ["up", "-d", "nakama", "postgres"],
+        "problemMatcher": []
+      },
+      {
+        "label": "Nakama: Stop",
+        "type": "shell",
+        "command": "docker-compose",
+        "args": ["down"],
+        "problemMatcher": []
+      },
+      {
+        "label": "Nakama: Logs",
+        "type": "shell",
+        "command": "docker-compose",
+        "args": ["logs", "-f", "nakama"],
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      },
+      {
+        "label": "Docker: Up All",
+        "type": "shell",
+        "command": "docker-compose",
+        "args": ["up", "-d"],
+        "problemMatcher": []
+      },
+      {
+        "label": "Docker: Down All",
+        "type": "shell",
+        "command": "docker-compose",
+        "args": ["down"],
+        "problemMatcher": []
+      },
+      {
+        "label": "Blender: Export Assets",
+        "type": "shell",
+        "command": "blender",
+        "args": ["--background", "--python", "blender/scripts/batch_export.py"],
+        "problemMatcher": [],
+        "detail": "Run Blender headless to export all models to FBX for UE5"
+      },
+      {
+        "label": "UE5: Generate Project Files",
+        "type": "shell",
+        "command": "cmd",
+        "args": ["/c", "\"${env:UE5_ROOT}\\Engine\\Build\\BatchFiles\\GenerateProjectFiles.bat\"", "ue5-client/TowerGame.uproject", "-game"],
+        "problemMatcher": [],
+        "detail": "Generate VS project files for UE5 (requires UE5_ROOT env var)"
+      },
+      {
+        "label": "Full Build: Rust + DLL",
+        "dependsOrder": "sequence",
+        "dependsOn": ["Rust: Test All", "Rust: Build DLL (cdylib)"],
+        "problemMatcher": [],
+        "group": "build"
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "rust-lang.rust-analyzer",
+      "vadimcn.vscode-lldb",
+      "tamasfe.even-better-toml",
+      "serayuzgur.crates",
+      "ms-vscode.cpptools",
+      "ms-vscode.cmake-tools",
+      "zxh404.vscode-proto3",
+      "ms-azuretools.vscode-docker",
+      "redhat.vscode-yaml",
+      "sumneko.lua",
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "eamodio.gitlens",
+      "usernamehw.errorlens",
+      "gruntfuggly.todo-tree",
+      "humao.rest-client",
+      "JacquesLucke.blender-development",
+      "nicola-sella.unreal-engine-tools",
+      "redhat.vscode-xml"
+    ]
+  }
+}

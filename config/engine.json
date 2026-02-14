@@ -1,0 +1,134 @@
+{
+  "engine": {
+    "name": "Tower Hybrid Engine",
+    "version": "0.3.0",
+    "description": "Hybrid game engine: UE5 graphics + Rust/Bevy procedural logic"
+  },
+
+  "procedural_core": {
+    "tower_seed": 42,
+    "tick_rate": 60,
+    "deterministic": true,
+    "modules": {
+      "semantic": { "enabled": true, "tag_dimensions": 32 },
+      "generation": { "enabled": true, "wfc_max_iterations": 1000 },
+      "combat": { "enabled": true, "timing_window_ms": 200 },
+      "movement": { "enabled": true, "max_speed": 10.0 },
+      "aerial": { "enabled": true, "gravity": 9.81 },
+      "death": { "enabled": true, "echo_duration_sec": 300 },
+      "monster": { "enabled": true, "grammar_depth": 5 },
+      "player": { "enabled": true },
+      "loot": { "enabled": true, "base_drop_chance": 0.15 },
+      "world": { "enabled": true, "breath_cycle_sec": 1080 },
+      "faction": { "enabled": true, "faction_count": 4 },
+      "economy": { "enabled": true, "auction_tax_percent": 5 },
+      "mastery": { "enabled": true, "domains": 21, "max_tier": 6 },
+      "specialization": { "enabled": true, "max_branches": 3 },
+      "abilities": { "enabled": true, "hotbar_slots": 6 },
+      "sockets": { "enabled": true, "max_sockets_per_item": 4 },
+      "equipment": { "enabled": true },
+      "cosmetics": { "enabled": true },
+      "tutorial": { "enabled": true },
+      "balance": { "enabled": true, "monte_carlo_iterations": 10000 },
+      "achievements": { "enabled": true },
+      "anticheat": { "enabled": true },
+      "social": { "enabled": true },
+      "seasons": { "enabled": true, "season_levels": 50 },
+      "replication": { "enabled": true },
+      "events": { "enabled": true }
+    }
+  },
+
+  "transport": {
+    "mode": "json",
+    "host": "127.0.0.1",
+    "port": 50051,
+    "timeout_seconds": 5,
+    "max_retries": 3,
+    "health_check_interval_seconds": 10,
+    "ffi_fallback": {
+      "enabled": true,
+      "dll_path": "procedural-core/target/release/tower_core.dll"
+    }
+  },
+
+  "ue5_client": {
+    "engine_version": "5.3.2",
+    "rendering": {
+      "nanite": true,
+      "lumen": true,
+      "virtual_shadow_maps": true,
+      "temporal_super_resolution": true,
+      "ray_tracing": false,
+      "target_fps": 60
+    },
+    "world": {
+      "world_partition": true,
+      "hlod": true,
+      "level_streaming": true
+    },
+    "animation": {
+      "control_rig": true,
+      "ik_enabled": true,
+      "physics_animation": true
+    },
+    "procedural_rendering": {
+      "tile_size_cm": 300,
+      "wall_height_cm": 400,
+      "door_width_cm": 200,
+      "floor_thickness_cm": 20,
+      "room_light_intensity": 2000,
+      "room_light_radius": 800
+    },
+    "sync": {
+      "rate_hz": 20,
+      "interpolation_delay_ms": 100,
+      "prediction_enabled": true,
+      "max_pending_actions": 32,
+      "max_snapshot_buffer": 64,
+      "desync_threshold": 50.0,
+      "teleport_threshold": 500.0
+    }
+  },
+
+  "nakama_server": {
+    "host": "127.0.0.1",
+    "port": 7350,
+    "grpc_port": 7349,
+    "server_key": "defaultkey",
+    "modules": [
+      "match_handler",
+      "leaderboard",
+      "guild_manager",
+      "auction_house",
+      "season_tracker"
+    ]
+  },
+
+  "blender_pipeline": {
+    "models_dir": "blender/models",
+    "export_dir": "ue5-client/Content/Models/Imported",
+    "export_format": "fbx",
+    "ue5_scale": 1.0,
+    "axis_forward": "-Y",
+    "axis_up": "Z",
+    "embed_textures": true,
+    "naming_convention": {
+      "static_mesh": "SM_",
+      "skeletal_mesh": "SK_",
+      "material": "M_",
+      "texture": "T_",
+      "animation": "A_"
+    }
+  },
+
+  "development": {
+    "debug_logging": true,
+    "show_hitboxes": false,
+    "show_semantic_tags": false,
+    "god_mode": false,
+    "skip_tutorial": false,
+    "test_floor_id": 1,
+    "auto_connect": true
+  }
+}

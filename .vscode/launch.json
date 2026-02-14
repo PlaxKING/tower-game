@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug: Procedural Core (Bevy)",
+      "cargo": {
+        "args": ["build", "--manifest-path", "${workspaceFolder}/procedural-core/Cargo.toml"],
+        "filter": { "kind": "bin" }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/procedural-core",
+      "env": { "RUST_BACKTRACE": "1", "RUST_LOG": "debug" }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Test: Procedural Core",
+      "cargo": {
+        "args": ["test", "--no-run", "--manifest-path", "${workspaceFolder}/procedural-core/Cargo.toml"],
+        "filter": { "kind": "lib" }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/procedural-core",
+      "env": { "RUST_BACKTRACE": "1" }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Bench: Generation",
+      "cargo": {
+        "args": ["bench", "--no-run", "--manifest-path", "${workspaceFolder}/procedural-core/Cargo.toml"],
+        "filter": { "kind": "bench" }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/procedural-core"
+    }
+  ]
+}

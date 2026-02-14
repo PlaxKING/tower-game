@@ -1,0 +1,141 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'procedural-core/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'procedural-core/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Check & Lint
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: procedural-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (GNU)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            procedural-core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('procedural-core/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Clippy (lib)
+        run: cargo clippy --lib -- -D warnings
+
+      - name: Clippy (tests)
+        run: cargo clippy --tests -- -A dead_code
+
+  test:
+    name: Test Suite
+    runs-on: windows-latest
+    needs: check
+    defaults:
+      run:
+        working-directory: procedural-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (GNU)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            procedural-core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('procedural-core/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Run lib tests
+        run: cargo test --lib
+
+      - name: Run integration tests
+        run: cargo test --test json_roundtrip
+
+      - name: Run property tests
+        run: cargo test --test property_tests
+
+      - name: Run edge case tests
+        run: cargo test --test edge_cases
+
+      - name: Run FFI stress tests
+        run: cargo test --test ffi_stress
+
+  build-release:
+    name: Build Release DLL
+    runs-on: windows-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: procedural-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (GNU)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            procedural-core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('procedural-core/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Verify DLL exports
+        shell: bash
+        run: |
+          DLL="target/release/tower_core.dll"
+          if [ -f "$DLL" ]; then
+            echo "DLL size: $(du -h $DLL | cut -f1)"
+            EXPORTS=$(objdump -p "$DLL" | grep -c "Name:")
+            echo "Export count: $EXPORTS"
+            if [ "$EXPORTS" -lt 100 ]; then
+              echo "ERROR: Expected at least 100 exports, got $EXPORTS"
+              exit 1
+            fi
+          else
+            echo "ERROR: DLL not found"
+            exit 1
+          fi
+
+      - name: Upload DLL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tower_core-release
+          path: procedural-core/target/release/tower_core.dll
+          retention-days: 30

@@ -1,0 +1,27 @@
+* text=auto
+*.sh text eol=lf
+*.rs text eol=lf
+*.toml text eol=lf
+*.proto text eol=lf
+*.lua text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.blend binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.tga binary
+*.hdr binary
+*.exr binary
+*.fbx binary
+*.gltf binary
+*.glb binary
+*.uasset binary
+*.umap binary
+*.wav binary
+*.mp3 binary
+*.ogg binary

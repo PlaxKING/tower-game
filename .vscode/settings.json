@@ -1,0 +1,144 @@
+{
+  // === General Editor Settings ===
+  "editor.tabSize": 4,
+  "editor.formatOnSave": true,
+  "editor.minimap.enabled": false,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.stickyScroll.enabled": true,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 2000,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // === File Associations ===
+  "files.associations": {
+    "*.ron": "rust",
+    "*.proto": "proto3",
+    "*.uproject": "json",
+    "*.uplugin": "json",
+    "*.uasset": "binary",
+    "*.umap": "binary",
+    "*.blend": "binary"
+  },
+
+  // === Rust Settings (Procedural Core) ===
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "rust-analyzer.checkOnSave": true,
+  "rust-analyzer.cargo.allFeatures": true,
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.linkedProjects": [
+    "procedural-core/Cargo.toml"
+  ],
+  "rust-analyzer.diagnostics.experimental.enable": true,
+
+  // === C++ Settings (UE5 Client) ===
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": false
+  },
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  },
+  "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/ue5-client/Source/**",
+    "${workspaceFolder}/ue5-client/ThirdParty/**"
+  ],
+  "C_Cpp.default.defines": [
+    "WITH_EDITOR=1",
+    "UE_BUILD_DEVELOPMENT=1",
+    "PLATFORM_WINDOWS=1"
+  ],
+
+  // === Lua Settings (Nakama) ===
+  "[lua]": {
+    "editor.defaultFormatter": "sumneko.lua"
+  },
+  "Lua.diagnostics.globals": ["nk", "require", "module"],
+  "Lua.runtime.version": "Lua 5.1",
+
+  // === Protocol Buffers ===
+  "[proto3]": {
+    "editor.defaultFormatter": "zxh404.vscode-proto3"
+  },
+
+  // === Python Settings (Blender/AI Pipeline) ===
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+
+  // === YAML Settings ===
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2
+  },
+
+  // === Search Exclusions ===
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/target": true,
+    "**/Binaries": true,
+    "**/Intermediate": true,
+    "**/DerivedDataCache": true,
+    "**/Saved": true,
+    "**/.git": true,
+    "**/Build": true,
+    "**/*.uasset": true,
+    "**/*.umap": true
+  },
+
+  "files.exclude": {
+    "**/.git": true,
+    "**/Intermediate": true,
+    "**/DerivedDataCache": true,
+    "**/Saved/Autosaves": true
+  },
+
+  // === Terminal ===
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.env.windows": {
+    "TOWER_GAME_ROOT": "${workspaceFolder}",
+    "GRPC_HOST": "127.0.0.1",
+    "GRPC_PORT": "50051"
+  },
+
+  // === Docker ===
+  "docker.compose.files": [
+    "${workspaceFolder}/docker-compose.yml"
+  ],
+
+  // === Todo Tree ===
+  "todo-tree.general.tags": [
+    "TODO", "FIXME", "HACK", "BUG", "PERF", "NOTE", "SEMANTIC", "GRPC"
+  ],
+  "todo-tree.highlights.customHighlight": {
+    "SEMANTIC": {
+      "icon": "link",
+      "foreground": "#9B59B6",
+      "type": "tag"
+    },
+    "PERF": {
+      "icon": "flame",
+      "foreground": "#E74C3C",
+      "type": "tag"
+    },
+    "GRPC": {
+      "icon": "plug",
+      "foreground": "#3498DB",
+      "type": "tag"
+    }
+  },
+
+  // === Error Lens ===
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+  "errorLens.delay": 500
+}

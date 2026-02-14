@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:/Users/Plax/Desktop/tower_game/docker-compose.yml\" << 'EOF'\nversion: '3.8'\n\nservices:\n  postgres:\n    image: postgres:15-alpine\n    container_name: tower-postgres\n    environment:\n      POSTGRES_DB: nakama\n      POSTGRES_USER: postgres\n      POSTGRES_PASSWORD: localdb\n    ports:\n      - \"5432:5432\"\n    volumes:\n      - postgres-data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n\n  nakama:\n    image: heroiclabs/nakama:3.21.1\n    container_name: tower-nakama\n    depends_on:\n      postgres:\n        condition: service_healthy\n    entrypoint:\n      - /nakama/nakama\n      - --database.address=postgres:localdb@postgres:5432/nakama\n      - --logger.level=DEBUG\n      - --session.token_expiry_sec=7200\n    ports:\n      - \"7349:7349\"   # gRPC API\n      - \"7350:7350\"   # HTTP API\n      - \"7351:7351\"   # Console\n    volumes:\n      - ./nakama-server/modules:/nakama/data/modules\n    restart: unless-stopped\n    healthcheck:\n      test: [\"CMD\", \"/nakama/nakama\", \"healthcheck\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n\nvolumes:\n  postgres-data:\nEOF)",
+      "Bash(\"C:/Users/Plax/Desktop/tower_game/shared/proto/game_state.proto\" << 'EOF'\nsyntax = \"proto3\";\n\npackage tower;\n\n// === Core Types ===\n\nmessage Vec3 {\n  float x = 1;\n  float y = 2;\n  float z = 3;\n}\n\nmessage Quat {\n  float x = 1;\n  float y = 2;\n  float z = 3;\n  float w = 4;\n}\n\nmessage SemanticTag {\n  string name = 1;\n  float value = 2;\n}\n\n// === Player State ===\n\nmessage PlayerState {\n  uint64 entity_id = 1;\n  Vec3 position = 2;\n  Quat rotation = 3;\n  float health = 4;\n  repeated ItemSlot inventory = 5;\n  repeated AbilityState abilities = 6;\n  CombatResources resources = 7;\n  uint64 timestamp = 8;\n}\n\nmessage ItemSlot {\n  uint32 slot_id = 1;\n  string item_name = 2;\n  repeated SemanticTag tags = 3;\n  float durability = 4;\n}\n\nmessage AbilityState {\n  string ability_id = 1;\n  float cooldown_remaining = 2;\n  repeated SemanticTag tags = 3;\n}\n\nmessage CombatResources {\n  float kinetic_energy = 1;\n  float thermal_energy = 2;\n  float semantic_energy = 3;\n  float rage = 4;\n}\n\n// === Floor / Generation ===\n\nmessage FloorRequest {\n  uint64 tower_seed = 1;\n  uint32 floor_id = 2;\n}\n\nmessage FloorResponse {\n  uint32 floor_id = 1;\n  uint64 floor_hash = 2;\n  repeated SemanticTag biome_tags = 3;\n  FloorTier tier = 4;\n  repeated MonsterSpawn monsters = 5;\n}\n\nenum FloorTier {\n  ECHELON_1 = 0;\n  ECHELON_2 = 1;\n  ECHELON_3 = 2;\n  ECHELON_4 = 3;\n}\n\nmessage MonsterSpawn {\n  uint64 entity_id = 1;\n  string monster_type = 2;\n  Vec3 position = 3;\n  repeated SemanticTag tags = 4;\n  float health = 5;\n}\n\n// === Actions ===\n\nmessage PlayerAction {\n  uint64 player_id = 1;\n  oneof action {\n    MoveAction move = 2;\n    AttackAction attack = 3;\n    ParryAction parry = 4;\n    DodgeAction dodge = 5;\n    UseAbilityAction use_ability = 6;\n  }\n  uint64 timestamp = 10;\n}\n\nmessage MoveAction {\n  Vec3 direction = 1;\n  bool sprinting = 2;\n}\n\nmessage AttackAction {\n  string weapon_id = 1;\n  uint32 combo_step = 2;\n  Vec3 direction = 3;\n}\n\nmessage ParryAction {\n  uint64 timing_ms = 1;\n}\n\nmessage DodgeAction {\n  Vec3 direction = 1;\n}\n\nmessage UseAbilityAction {\n  string ability_id = 1;\n  Vec3 target_position = 2;\n}\n\n// === Mutations \\(Seed + Delta model\\) ===\n\nmessage FloorMutation {\n  uint32 floor_id = 1;\n  uint64 entity_id = 2;\n  MutationType mutation_type = 3;\n  bytes data = 4;\n  uint64 timestamp = 5;\n}\n\nenum MutationType {\n  ENTITY_SPAWNED = 0;\n  ENTITY_KILLED = 1;\n  ENTITY_DAMAGED = 2;\n  CHEST_OPENED = 3;\n  ECHO_CREATED = 4;\n  ARCHITECTURAL_CHANGE = 5;\n}\nEOF)",
+      "Bash(\"C:/Users/Plax/Desktop/tower_game/procedural-core/.cargo/config.toml\" << 'EOF'\n[target.x86_64-pc-windows-msvc]\nlinker = \"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/link.exe\"\nEOF)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(rustup target add:*)",
+      "Bash(rustup target list:*)",
+      "Bash(\"C:/Users/Plax/Desktop/tower_game/procedural-core/.cargo/config.toml\" << 'EOF'\n[build]\ntarget = \"x86_64-pc-windows-gnu\"\nEOF)",
+      "Bash(\"C:/Users/Plax/Desktop/tower_game/nakama-server/modules/tower_main.lua\" << 'EOF'\n-- Tower Game - Main Nakama Server Module\n-- Handles: matchmaking, player state, leaderboards\n\nlocal nk = require\\(\"nakama\"\\)\n\n-- Register RPC functions\nnk.register_rpc\\(function\\(context, payload\\)\n    local data = nk.json_decode\\(payload\\)\n    nk.logger_info\\(string.format\\(\"Player %s requesting floor %d\", context.user_id, data.floor_id\\)\\)\n    return nk.json_encode\\({\n        status = \"ok\",\n        floor_id = data.floor_id,\n        message = \"Floor generation delegated to procedural core\"\n    }\\)\nend, \"request_floor\"\\)\n\n-- Health check\nnk.register_rpc\\(function\\(context, payload\\)\n    return nk.json_encode\\({ status = \"healthy\", version = \"0.1.0\" }\\)\nend, \"health_check\"\\)\n\nnk.logger_info\\(\"Tower Game server module loaded\"\\)\nEOF)",
+      "Bash(rustup toolchain:*)",
+      "Bash(rustup default:*)",
+      "Bash(cargo test:*)",
+      "Bash(where:*)",
+      "Bash(dir /s /b \"%USERPROFILE%\\\\.rustup\\\\toolchains\\\\*dlltool*\")",
+      "Bash(MINGW=\"C:/Users/Plax/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin\")",
+      "Bash(PATH=\"$MINGW:$PATH\" cd:*)",
+      "Bash(PATH=\"$MINGW:$PATH\" cargo test:*)",
+      "Bash(export PATH:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(objdump:*)",
+      "Bash(nm:*)",
+      "Bash(findstr:*)",
+      "Bash(tr:*)",
+      "Read(//c/**)"
+    ]
+  }
+}

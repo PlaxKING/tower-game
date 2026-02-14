@@ -1,0 +1,342 @@
+syntax = "proto3";
+
+package tower;
+
+// === Core Types ===
+
+message Vec3 {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message Quat {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+  float w = 4;
+}
+
+message SemanticTag {
+  string name = 1;
+  float value = 2;
+}
+
+message Transform {
+  Vec3 position = 1;
+  Quat rotation = 2;
+  Vec3 scale = 3;
+}
+
+// === Player State ===
+
+message PlayerState {
+  uint64 entity_id = 1;
+  Vec3 position = 2;
+  Quat rotation = 3;
+  float health = 4;
+  float max_health = 5;
+  repeated ItemSlot inventory = 6;
+  repeated AbilityState abilities = 7;
+  CombatResources resources = 8;
+  MasterySnapshot mastery = 9;
+  uint64 timestamp = 10;
+}
+
+message ItemSlot {
+  uint32 slot_id = 1;
+  string item_name = 2;
+  repeated SemanticTag tags = 3;
+  float durability = 4;
+  ItemRarity rarity = 5;
+  repeated SocketState sockets = 6;
+}
+
+enum ItemRarity {
+  COMMON = 0;
+  UNCOMMON = 1;
+  RARE = 2;
+  EPIC = 3;
+  LEGENDARY = 4;
+  MYTHIC = 5;
+}
+
+message SocketState {
+  SocketColor color = 1;
+  oneof content {
+    GemState gem = 2;
+    RuneState rune = 3;
+  }
+}
+
+enum SocketColor {
+  RED = 0;
+  BLUE = 1;
+  YELLOW = 2;
+  PRISMATIC = 3;
+}
+
+message GemState {
+  string gem_id = 1;
+  uint32 tier = 2;
+  string bonus_type = 3;
+  float bonus_value = 4;
+}
+
+message RuneState {
+  string rune_id = 1;
+  string effect_type = 2;
+  float proc_chance = 3;
+}
+
+message AbilityState {
+  string ability_id = 1;
+  float cooldown_remaining = 2;
+  float cooldown_total = 3;
+  repeated SemanticTag tags = 4;
+  uint32 slot_index = 5;
+}
+
+message CombatResources {
+  float kinetic_energy = 1;
+  float thermal_energy = 2;
+  float semantic_energy = 3;
+  float rage = 4;
+}
+
+message MasterySnapshot {
+  repeated MasteryDomainState domains = 1;
+  repeated string active_specializations = 2;
+}
+
+message MasteryDomainState {
+  string domain_name = 1;
+  uint32 tier = 2;
+  float xp_current = 3;
+  float xp_required = 4;
+}
+
+// === Floor / Generation ===
+
+message FloorRequest {
+  uint64 tower_seed = 1;
+  uint32 floor_id = 2;
+}
+
+message FloorResponse {
+  uint32 floor_id = 1;
+  uint64 floor_hash = 2;
+  repeated SemanticTag biome_tags = 3;
+  FloorTier tier = 4;
+  FloorLayout layout = 5;
+  repeated MonsterSpawn monsters = 6;
+  repeated LootPoint loot_points = 7;
+}
+
+enum FloorTier {
+  ECHELON_1 = 0;
+  ECHELON_2 = 1;
+  ECHELON_3 = 2;
+  ECHELON_4 = 3;
+}
+
+message FloorLayout {
+  uint32 width = 1;
+  uint32 height = 2;
+  repeated TileData tiles = 3;
+  repeated RoomData rooms = 4;
+  repeated ConnectionData connections = 5;
+}
+
+message TileData {
+  uint32 x = 1;
+  uint32 y = 2;
+  TileType tile_type = 3;
+  repeated SemanticTag tags = 4;
+}
+
+enum TileType {
+  EMPTY = 0;
+  CORRIDOR = 1;
+  ROOM_FLOOR = 2;
+  WALL = 3;
+  DOOR = 4;
+  STAIRS_UP = 5;
+  STAIRS_DOWN = 6;
+  TRAP = 7;
+  CHEST = 8;
+  BOSS_ARENA = 9;
+  SHRINE = 10;
+  WATER = 11;
+}
+
+message RoomData {
+  uint32 room_id = 1;
+  uint32 x = 2;
+  uint32 y = 3;
+  uint32 width = 4;
+  uint32 height = 5;
+  string room_type = 6;
+  repeated SemanticTag tags = 7;
+}
+
+message ConnectionData {
+  uint32 from_room = 1;
+  uint32 to_room = 2;
+  string connection_type = 3;
+}
+
+message MonsterSpawn {
+  uint64 entity_id = 1;
+  string monster_type = 2;
+  Vec3 position = 3;
+  repeated SemanticTag tags = 4;
+  float health = 5;
+  float max_health = 6;
+  MonsterGrammar grammar = 7;
+}
+
+message MonsterGrammar {
+  string body_type = 1;
+  string locomotion = 2;
+  string attack_style = 3;
+  repeated string modifiers = 4;
+}
+
+message LootPoint {
+  uint64 entity_id = 1;
+  Vec3 position = 2;
+  string loot_type = 3;
+  repeated SemanticTag tags = 4;
+}
+
+// === Actions ===
+
+message PlayerAction {
+  uint64 player_id = 1;
+  oneof action {
+    MoveAction move = 2;
+    AttackAction attack = 3;
+    ParryAction parry = 4;
+    DodgeAction dodge = 5;
+    UseAbilityAction use_ability = 6;
+    InteractAction interact = 7;
+  }
+  uint64 timestamp = 10;
+  uint64 sequence_number = 11;
+}
+
+message MoveAction {
+  Vec3 direction = 1;
+  bool sprinting = 2;
+}
+
+message AttackAction {
+  string weapon_id = 1;
+  uint32 combo_step = 2;
+  Vec3 direction = 3;
+}
+
+message ParryAction {
+  uint64 timing_ms = 1;
+}
+
+message DodgeAction {
+  Vec3 direction = 1;
+}
+
+message UseAbilityAction {
+  string ability_id = 1;
+  Vec3 target_position = 2;
+  uint64 target_entity = 3;
+}
+
+message InteractAction {
+  uint64 target_entity = 1;
+  string interaction_type = 2;
+}
+
+// === Action Results ===
+
+message ActionResult {
+  uint64 sequence_number = 1;
+  bool accepted = 2;
+  string rejection_reason = 3;
+  repeated StateChange changes = 4;
+  uint64 server_timestamp = 5;
+}
+
+message StateChange {
+  uint64 entity_id = 1;
+  oneof change {
+    HealthChange health = 2;
+    PositionChange position = 3;
+    StatusEffectChange status = 4;
+    ResourceChange resource = 5;
+    EntitySpawned spawned = 6;
+    EntityDespawned despawned = 7;
+  }
+}
+
+message HealthChange {
+  float old_value = 1;
+  float new_value = 2;
+  string source = 3;
+}
+
+message PositionChange {
+  Vec3 new_position = 1;
+  Quat new_rotation = 2;
+}
+
+message StatusEffectChange {
+  string effect_name = 1;
+  bool applied = 2;
+  float duration = 3;
+}
+
+message ResourceChange {
+  string resource_type = 1;
+  float old_value = 2;
+  float new_value = 3;
+}
+
+message EntitySpawned {
+  string entity_type = 1;
+  Vec3 position = 2;
+  repeated SemanticTag tags = 3;
+}
+
+message EntityDespawned {
+  string reason = 1;
+}
+
+// === Mutations (Seed + Delta model) ===
+
+message FloorMutation {
+  uint32 floor_id = 1;
+  uint64 entity_id = 2;
+  MutationType mutation_type = 3;
+  bytes data = 4;
+  uint64 timestamp = 5;
+}
+
+enum MutationType {
+  ENTITY_SPAWNED = 0;
+  ENTITY_KILLED = 1;
+  ENTITY_DAMAGED = 2;
+  CHEST_OPENED = 3;
+  ECHO_CREATED = 4;
+  ARCHITECTURAL_CHANGE = 5;
+  LOOT_DROPPED = 6;
+  TRAP_TRIGGERED = 7;
+}
+
+// === World Cycle ===
+
+message WorldCycleState {
+  string current_phase = 1;
+  float phase_progress = 2;
+  float time_remaining = 3;
+  repeated SemanticTag active_modifiers = 4;
+}
