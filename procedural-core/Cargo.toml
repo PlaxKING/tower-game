@@ -10,7 +10,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # ECS Game Engine
-bevy = { version = "0.15", features = ["dynamic_linking"] }
+# Note: dynamic_linking removed for DLL builds - it conflicts with cdylib exports
+bevy = "0.15"
 
 # Physics & Collisions
 bevy_rapier3d = "0.28"
@@ -61,3 +62,15 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[profile.release]
+# CRITICAL: Disable LTO to preserve all FFI exports in DLL
+lto = false
+# Do NOT strip symbols - we need them for DLL exports
+strip = "none"
+# Optimize for speed (opt-level 3 is default for release)
+opt-level = 3
+# Single codegen unit for better optimization of non-exported code
+codegen-units = 1
+# Panic abort for smaller binary size
+panic = "abort"
