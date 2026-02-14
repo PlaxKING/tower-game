@@ -47,6 +47,7 @@ desktop.ini
 .env
 .env.local
 *.secret
+SSH-KEY-BACKUP.txt
 
 # === Build artifacts ===
 dist/
