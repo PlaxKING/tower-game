@@ -91,7 +91,7 @@ jobs:
   build-release:
     name: Build Release DLL
     runs-on: windows-latest
-    needs: test
+    needs: check  # Changed from 'test' - build in parallel with tests for faster DLL
     defaults:
       run:
         working-directory: procedural-core
