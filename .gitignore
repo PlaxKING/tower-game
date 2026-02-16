@@ -63,6 +63,7 @@ logs/
 
 # === Project Documentation (личные заметки и отчёты) ===
 project info by plax/
+docs/                # Рабочие отчёты и документация
 *.md
 !README.md           # Исключение: главный README должен быть в Git
 !CLAUDE.md           # Исключение: инструкции для агента
