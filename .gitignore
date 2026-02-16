@@ -71,8 +71,5 @@ dopopensource.txt
 # === Project Documentation (личные заметки и отчёты) ===
 project info by plax/
 docs/                # Рабочие отчёты и документация
-*.md
-!README.md           # Исключение: главный README должен быть в Git
-!CLAUDE.md           # Исключение: инструкции для агента
-!TECH-STACK.md       # Исключение: технологический стек
-!ARCHITECTURE.md     # Исключение: архитектура проекта
+*.md                 # Все markdown файлы игнорируются
+*.txt                # Все текстовые файлы игнорируются
