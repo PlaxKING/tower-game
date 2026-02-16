@@ -1,0 +1,21 @@
+name: tower-game
+log:
+  level: INFO
+
+database:
+  address:
+    - "postgres:5432"
+  name: nakama
+  user: nakama
+  password: tower_db_password_2026
+
+runtime:
+  path: "/nakama/data/modules"
+
+socket:
+  port: 7350
+
+console:
+  port: 7351
+  username: admin
+  password: admin
