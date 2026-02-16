@@ -1,6 +1,7 @@
 LIBRARY tower_core
 EXPORTS
     get_version
+    free_string
     generate_floor
     generate_floor_layout
     get_floor_hash
