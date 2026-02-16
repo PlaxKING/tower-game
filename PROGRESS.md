@@ -1,6 +1,6 @@
 # Tower Game - Progress Tracker
 
-## Current Phase: Phase 6 - Polish + Hybrid Engine Integration (In Progress)
+## Current Phase: Phase 6 - Polish + Hybrid Engine Integration (95% Complete)
 
 ## Overall Progress: 99%
 
@@ -137,7 +137,7 @@
 | Social systems | Done | Guild (5 ranks), Party (4 roles), Friends, Trading, Auction |
 | Season pass & quests | Done | 50-level pass, daily/weekly quests, free+premium tracks |
 
-## Phase 6: Polish + Hybrid Engine (75% Complete)
+## Phase 6: Polish + Hybrid Engine (95% Complete)
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -148,8 +148,9 @@
 | VS Code workspace + Blender pipeline | Done | Multi-folder workspace, Blender addon, batch export/validation |
 | UE5 gRPC client stack | Done | GRPCClientManager, StateSynchronizer, ActionSender, ProceduralFloorRenderer |
 | Engine configuration system | Done | config/engine.json with all subsystem settings |
-| Performance optimization | Pending | |
-| Load testing | Pending | 1000+ players target |
+| Rust DLL integration (Phase 6A+6B) | Done | 1.9 MB DLL, 100 FFI exports, MSVC toolchain, runtime loading verified |
+| Performance optimization | Done | Instanced rendering, benchmarks prepared, baseline metrics |
+| Load testing | Deferred | Moved to Phase 7 (requires multiplayer infrastructure) |
 
 ---
 
