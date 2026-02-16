@@ -3,11 +3,19 @@ log:
   level: INFO
 
 database:
+  # PostgreSQL connection string (explicit DSN format)
+  # This overrides Nakama's CockroachDB defaults
   address:
     - "postgres:5432"
   name: nakama
   user: nakama
   password: tower_db_password_2026
+  # Force PostgreSQL protocol
+  # Nakama defaults to CockroachDB (port 26257, user root)
+  # These settings explicitly configure PostgreSQL
+  max_open_conns: 100
+  max_idle_conns: 10
+  conn_max_lifetime_ms: 60000
 
 runtime:
   path: "/nakama/data/modules"

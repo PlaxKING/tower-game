@@ -312,7 +312,36 @@ ports:
 docker-compose ps
 docker-compose logs postgres
 
-# Verify password in .env matches config.yml
+# Run diagnostic script
+chmod +x check-connection.sh
+./check-connection.sh
+
+# Verify password in docker-compose.yml matches local.yml
+```
+
+**Nakama tries to connect with user=root (CockroachDB defaults)**:
+This is a known issue where Nakama defaults to CockroachDB settings.
+
+**Fix Applied** (v0.6.0):
+- Triple-layer configuration: command args + env vars + config file
+- Explicitly sets PostgreSQL credentials in all three places
+- Environment variables: `NAKAMA_DATABASE_USER=nakama`
+- Command flags: `--database.user nakama`
+- Config file: `database.user: nakama`
+
+**If still failing**:
+```bash
+# Full reset (WARNING: deletes all data)
+docker-compose down -v
+docker-compose up -d
+
+# Check Nakama is reading correct config
+docker exec tower-nakama env | grep DATABASE
+# Should show: NAKAMA_DATABASE_USER=nakama (not root)
+
+# Manually test PostgreSQL connection
+docker exec tower-postgres psql -U nakama -d nakama -c "SELECT version();"
+# Should succeed without password prompt
 ```
 
 **Lua module not loading**:
