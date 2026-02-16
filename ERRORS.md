@@ -249,6 +249,16 @@
 - **Prevention**: Use unique, descriptive names for all delegates. Prefix with context (e.g., `FOnFloorGenerated` vs `FOnFloorGeneratedResponse`)
 - **Critical**: Unity build compiles multiple .gen.cpp together, making conflicts more likely
 
+### KP-023: Check all DLL search paths for stale versions
+- **Description**: TowerGameSubsystem searches multiple paths for tower_core.dll. If old DLL exists in higher-priority path (e.g., ThirdParty/), it will be loaded instead of new version
+- **Prevention**: When updating DLL, verify all search paths and remove/update stale copies. Search order:
+  1. Binaries/Win64/tower_core.dll
+  2. ThirdParty/TowerCore/lib/tower_core.dll ← check this!
+  3. ../../procedural-core/target/release/tower_core.dll
+  4. ../../procedural-core/target/debug/tower_core.dll
+- **Detection**: "Failed to load ProceduralCore DLL" despite DLL existing → wrong version loaded
+- **Fix**: Copy latest DLL to all search paths or remove old copies
+
 ---
 
 ## Resolved Errors
@@ -275,12 +285,13 @@
 | ERROR-018 | Missing .lib file for MSVC linking | 2026-02-16 | Rebuilt with x86_64-pc-windows-msvc target |
 | ERROR-019 | free_rust_string function not found | 2026-02-16 | Renamed to free_string (actual Rust name) |
 | ERROR-020 | Delegate name conflict FOnFloorGenerated | 2026-02-16 | Renamed in GRPCClientManager → FOnFloorGeneratedResponse |
+| ERROR-021 | Old DLL loaded instead of new one (ThirdParty) | 2026-02-16 | Copied new MSVC DLL to ThirdParty/TowerCore/lib/ |
 
 ---
 
 ## Error Statistics
-- Total errors logged: 20
+- Total errors logged: 21
 - Open: 0
-- Resolved: 20
-- Known patterns: 22
+- Resolved: 21
+- Known patterns: 23
 - Common error patterns: See COMMON-ERRORS.md (16 CE + 5 BP)

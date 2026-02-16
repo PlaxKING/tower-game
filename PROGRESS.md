@@ -1214,3 +1214,52 @@ tower_core.dll.lib:      24 KB (Import library)
 ```
 
 ### Next: Phase 6B - Integration Testing in UE5 Editor
+
+---
+
+## Session 25: Phase 6B - DLL Integration Testing Complete (2026-02-16)
+
+**Objective**: Verify Rust DLL loading and FFI bridge functionality in UE5 Editor runtime
+
+**Status**: ✅ **COMPLETE** - DLL loads successfully, subsystem initializes, version confirmed
+
+### Achievements
+- ✅ Identified and fixed stale DLL issue (old 7.2 MB GNU DLL in ThirdParty/TowerCore/lib/)
+- ✅ Copied new MSVC DLL (1.9 MB) to ThirdParty directory
+- ✅ Verified DLL loading in UE5 Editor Play-In-Editor (PIE) mode
+- ✅ Confirmed UTowerGameSubsystem initialization with correct version (0.6.0)
+- ✅ Tested FFI bridge through Level Blueprint (Get Core Version → Print String)
+- ✅ All subsystems initialized successfully: GRPCClient, Nakama, TowerGame
+
+### Key Issues Resolved
+**ERROR-021: Old DLL loaded instead of new one**
+- **Root cause**: Stale DLL (7.2 MB, GNU toolchain) existed in ThirdParty/TowerCore/lib/
+- **Symptom**: "Failed to load ProceduralCore DLL" error in Output Log
+- **Solution**: Copied new MSVC DLL (1.9 MB) from Plugins/ProceduralCore/Binaries/Win64/ to ThirdParty/TowerCore/lib/
+- **Result**: DLL loads successfully, returns version "0.6.0"
+
+### Runtime Verification Log
+```
+LogTemp: Found Rust DLL at: C:/Users/Plax/Desktop/tower_game/ue5-client/ThirdParty/TowerCore/lib/tower_core.dll
+LogTemp: ProceduralCore DLL loaded successfully. Version: 0.6.0
+LogTemp: Tower Rust Core initialized. Version: 0.6.0
+```
+
+### Phase 6 (Hybrid Engine Integration) - COMPLETE ✅
+
+**Summary**: Rust procedural core DLL fully integrated with UE5 client
+- 100 FFI exports available
+- MSVC toolchain ensures compatibility
+- GameInstanceSubsystem manages DLL lifecycle
+- All 6 core systems ready for testing:
+  1. Floor generation (WFC)
+  2. Monster generation (grammar)
+  3. Combat calculation (angle/combo multipliers)
+  4. Semantic similarity
+  5. Breath of the Tower cycle
+  6. Hot-reload + Analytics
+
+### Next Steps
+1. **Update documentation**: Add ERROR-021 to ERRORS.md, update known patterns
+2. **Git commit**: Commit Phase 6 completion
+3. **Phase 7**: Begin Procedural Generation Systems implementation
