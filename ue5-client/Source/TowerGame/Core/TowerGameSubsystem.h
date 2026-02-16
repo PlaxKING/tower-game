@@ -52,6 +52,42 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Tower|Core")
     FString GetCoreVersion();
 
+    // ============ Hot-Reload (v0.6.0) ============
+
+    /** Get hot-reload status (enabled, reload count, etc.) */
+    UFUNCTION(BlueprintCallable, Category = "Tower|HotReload")
+    FString GetHotReloadStatus();
+
+    /** Trigger manual config reload (returns 1 on success, 0 on failure) */
+    UFUNCTION(BlueprintCallable, Category = "Tower|HotReload")
+    int32 TriggerConfigReload();
+
+    // ============ Analytics (v0.6.0) ============
+
+    /** Get analytics snapshot (combat stats, progression, economy, etc.) */
+    UFUNCTION(BlueprintCallable, Category = "Tower|Analytics")
+    FString GetAnalyticsSnapshot();
+
+    /** Reset all analytics counters */
+    UFUNCTION(BlueprintCallable, Category = "Tower|Analytics")
+    void ResetAnalytics();
+
+    /** Record damage dealt for balancing */
+    UFUNCTION(BlueprintCallable, Category = "Tower|Analytics")
+    void RecordDamageDealt(const FString& WeaponName, int32 Amount);
+
+    /** Record floor cleared for progression tracking */
+    UFUNCTION(BlueprintCallable, Category = "Tower|Analytics")
+    void RecordFloorCleared(int32 FloorId, int32 Tier, float TimeSecs);
+
+    /** Record gold earned for economy balancing */
+    UFUNCTION(BlueprintCallable, Category = "Tower|Analytics")
+    void RecordGoldEarned(int64 Amount);
+
+    /** Get list of all tracked event types */
+    UFUNCTION(BlueprintCallable, Category = "Tower|Analytics")
+    FString GetAnalyticsEventTypes();
+
     // ============ State ============
 
     /** Current tower seed */

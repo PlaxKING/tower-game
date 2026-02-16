@@ -133,6 +133,18 @@ bool FProceduralCoreBridge::Initialize(const FString& DllPath)
     LOAD_DLL_FUNC(SocialTradeConfirm, FnSocialTradeConfirm, "social_trade_confirm");
     LOAD_DLL_FUNC(SocialTradeExecute, FnSocialTradeExecute, "social_trade_execute");
 
+    // ---- Hot-Reload (v0.6.0) ----
+    LOAD_DLL_FUNC(HotReloadGetStatus, FnHotReloadGetStatus, "hotreload_get_status");
+    LOAD_DLL_FUNC(HotReloadTriggerReload, FnHotReloadTriggerReload, "hotreload_trigger_reload");
+
+    // ---- Analytics (v0.6.0) ----
+    LOAD_DLL_FUNC(AnalyticsGetSnapshot, FnAnalyticsGetSnapshot, "analytics_get_snapshot");
+    LOAD_DLL_FUNC(AnalyticsReset, FnAnalyticsReset, "analytics_reset");
+    LOAD_DLL_FUNC(AnalyticsRecordDamage, FnAnalyticsRecordDamage, "analytics_record_damage");
+    LOAD_DLL_FUNC(AnalyticsRecordFloorCleared, FnAnalyticsRecordFloorCleared, "analytics_record_floor_cleared");
+    LOAD_DLL_FUNC(AnalyticsRecordGold, FnAnalyticsRecordGold, "analytics_record_gold");
+    LOAD_DLL_FUNC(AnalyticsGetEventTypes, FnAnalyticsGetEventTypes, "analytics_get_event_types");
+
     // Verify critical functions
     if (!Fn_GenerateFloor || !Fn_FreeString || !Fn_GetVersion)
     {
@@ -781,4 +793,63 @@ FString FProceduralCoreBridge::SocialTradeExecute(const FString& TradeJson)
     if (!Fn_SocialTradeExecute) return FString();
     FTCHARToUTF8 Utf8(*TradeJson);
     return RustStringToFString(Fn_SocialTradeExecute(Utf8.Get()), Fn_FreeString);
+}
+
+// ============ Hot-Reload (v0.6.0) ============
+
+FString FProceduralCoreBridge::HotReloadGetStatus()
+{
+    if (!Fn_HotReloadGetStatus) return FString();
+    return RustStringToFString(Fn_HotReloadGetStatus(), Fn_FreeString);
+}
+
+uint32 FProceduralCoreBridge::HotReloadTriggerReload()
+{
+    if (!Fn_HotReloadTriggerReload) return 0;
+    return Fn_HotReloadTriggerReload();
+}
+
+// ============ Analytics (v0.6.0) ============
+
+FString FProceduralCoreBridge::AnalyticsGetSnapshot()
+{
+    if (!Fn_AnalyticsGetSnapshot) return FString();
+    return RustStringToFString(Fn_AnalyticsGetSnapshot(), Fn_FreeString);
+}
+
+void FProceduralCoreBridge::AnalyticsReset()
+{
+    if (Fn_AnalyticsReset)
+    {
+        Fn_AnalyticsReset();
+    }
+}
+
+void FProceduralCoreBridge::AnalyticsRecordDamage(const FString& WeaponName, uint32 Amount)
+{
+    if (!Fn_AnalyticsRecordDamage) return;
+    FTCHARToUTF8 Utf8Weapon(*WeaponName);
+    Fn_AnalyticsRecordDamage(Utf8Weapon.Get(), Amount);
+}
+
+void FProceduralCoreBridge::AnalyticsRecordFloorCleared(uint32 FloorId, uint32 Tier, float TimeSecs)
+{
+    if (Fn_AnalyticsRecordFloorCleared)
+    {
+        Fn_AnalyticsRecordFloorCleared(FloorId, Tier, TimeSecs);
+    }
+}
+
+void FProceduralCoreBridge::AnalyticsRecordGold(uint64 Amount)
+{
+    if (Fn_AnalyticsRecordGold)
+    {
+        Fn_AnalyticsRecordGold(Amount);
+    }
+}
+
+FString FProceduralCoreBridge::AnalyticsGetEventTypes()
+{
+    if (!Fn_AnalyticsGetEventTypes) return FString();
+    return RustStringToFString(Fn_AnalyticsGetEventTypes(), Fn_FreeString);
 }

@@ -105,3 +105,66 @@ FString UTowerGameSubsystem::GetCoreVersion()
     if (!IsRustCoreReady()) return TEXT("not loaded");
     return Bridge->GetVersion();
 }
+
+// ============ Hot-Reload (v0.6.0) ============
+
+FString UTowerGameSubsystem::GetHotReloadStatus()
+{
+    if (!IsRustCoreReady()) return TEXT("{\"enabled\":false}");
+    return Bridge->HotReloadGetStatus();
+}
+
+int32 UTowerGameSubsystem::TriggerConfigReload()
+{
+    if (!IsRustCoreReady()) return 0;
+    return static_cast<int32>(Bridge->HotReloadTriggerReload());
+}
+
+// ============ Analytics (v0.6.0) ============
+
+FString UTowerGameSubsystem::GetAnalyticsSnapshot()
+{
+    if (!IsRustCoreReady()) return TEXT("{}");
+    return Bridge->AnalyticsGetSnapshot();
+}
+
+void UTowerGameSubsystem::ResetAnalytics()
+{
+    if (IsRustCoreReady())
+    {
+        Bridge->AnalyticsReset();
+    }
+}
+
+void UTowerGameSubsystem::RecordDamageDealt(const FString& WeaponName, int32 Amount)
+{
+    if (IsRustCoreReady())
+    {
+        Bridge->AnalyticsRecordDamage(WeaponName, static_cast<uint32>(Amount));
+    }
+}
+
+void UTowerGameSubsystem::RecordFloorCleared(int32 FloorId, int32 Tier, float TimeSecs)
+{
+    if (IsRustCoreReady())
+    {
+        Bridge->AnalyticsRecordFloorCleared(
+            static_cast<uint32>(FloorId),
+            static_cast<uint32>(Tier),
+            TimeSecs);
+    }
+}
+
+void UTowerGameSubsystem::RecordGoldEarned(int64 Amount)
+{
+    if (IsRustCoreReady())
+    {
+        Bridge->AnalyticsRecordGold(static_cast<uint64>(Amount));
+    }
+}
+
+FString UTowerGameSubsystem::GetAnalyticsEventTypes()
+{
+    if (!IsRustCoreReady()) return TEXT("[]");
+    return Bridge->AnalyticsGetEventTypes();
+}

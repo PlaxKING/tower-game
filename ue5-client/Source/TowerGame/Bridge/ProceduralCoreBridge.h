@@ -5,7 +5,7 @@
 /**
  * C++ bridge for loading the Rust Procedural Core DLL (tower_core.dll).
  *
- * The Rust DLL v0.3.0 exposes 46 C-ABI functions covering:
+ * The Rust DLL v0.6.0 exposes 100 C-ABI functions covering:
  * - Floor generation (spec + full tile layout)
  * - Monster generation (templates + stats)
  * - Combat calculations (damage, angle, semantic bonuses)
@@ -135,6 +135,18 @@ typedef char* (*FnSocialTradeLock)(const char*, const char*);
 typedef char* (*FnSocialTradeConfirm)(const char*, const char*);
 typedef char* (*FnSocialTradeExecute)(const char*);
 
+// Hot-Reload (v0.6.0 - Session 22)
+typedef char* (*FnHotReloadGetStatus)();
+typedef uint32 (*FnHotReloadTriggerReload)();
+
+// Analytics (v0.6.0 - Session 22)
+typedef char* (*FnAnalyticsGetSnapshot)();
+typedef void  (*FnAnalyticsReset)();
+typedef void  (*FnAnalyticsRecordDamage)(const char*, uint32);
+typedef void  (*FnAnalyticsRecordFloorCleared)(uint32, uint32, float);
+typedef void  (*FnAnalyticsRecordGold)(uint64);
+typedef char* (*FnAnalyticsGetEventTypes)();
+
 // ============================================================
 // Bridge class
 // ============================================================
@@ -257,6 +269,18 @@ public:
     FString SocialTradeConfirm(const FString& TradeJson, const FString& PlayerId);
     FString SocialTradeExecute(const FString& TradeJson);
 
+    // ============ Hot-Reload (v0.6.0) ============
+    FString HotReloadGetStatus();
+    uint32 HotReloadTriggerReload();
+
+    // ============ Analytics (v0.6.0) ============
+    FString AnalyticsGetSnapshot();
+    void AnalyticsReset();
+    void AnalyticsRecordDamage(const FString& WeaponName, uint32 Amount);
+    void AnalyticsRecordFloorCleared(uint32 FloorId, uint32 Tier, float TimeSecs);
+    void AnalyticsRecordGold(uint64 Amount);
+    FString AnalyticsGetEventTypes();
+
 private:
     void* DllHandle = nullptr;
 
@@ -363,4 +387,16 @@ private:
     FnSocialTradeLock Fn_SocialTradeLock = nullptr;
     FnSocialTradeConfirm Fn_SocialTradeConfirm = nullptr;
     FnSocialTradeExecute Fn_SocialTradeExecute = nullptr;
+
+    // Hot-Reload (v0.6.0)
+    FnHotReloadGetStatus Fn_HotReloadGetStatus = nullptr;
+    FnHotReloadTriggerReload Fn_HotReloadTriggerReload = nullptr;
+
+    // Analytics (v0.6.0)
+    FnAnalyticsGetSnapshot Fn_AnalyticsGetSnapshot = nullptr;
+    FnAnalyticsReset Fn_AnalyticsReset = nullptr;
+    FnAnalyticsRecordDamage Fn_AnalyticsRecordDamage = nullptr;
+    FnAnalyticsRecordFloorCleared Fn_AnalyticsRecordFloorCleared = nullptr;
+    FnAnalyticsRecordGold Fn_AnalyticsRecordGold = nullptr;
+    FnAnalyticsGetEventTypes Fn_AnalyticsGetEventTypes = nullptr;
 };
