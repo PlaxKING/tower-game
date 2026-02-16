@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for Nakama
+  postgres:
+    image: postgres:15-alpine
+    container_name: tower-postgres
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_USER: nakama
+      POSTGRES_PASSWORD: tower_db_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tower_network
+
+  # Nakama game server
+  nakama:
+    image: heroiclabs/nakama:3.21.1
+    container_name: tower-nakama
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database connection
+      - DSN=postgres://nakama:tower_db_password_2026@postgres:5432/nakama?sslmode=disable
+
+      # Server configuration
+      - NAKAMA_NAME=tower-game-server
+      - NAKAMA_LOG_LEVEL=INFO
+
+      # Socket settings for real-time multiplayer
+      - NAKAMA_SOCKET_OUTGOING_QUEUE_SIZE=128
+      - NAKAMA_SOCKET_MAX_MESSAGE_SIZE_BYTES=16384
+
+      # Session settings
+      - NAKAMA_SESSION_TOKEN_EXPIRY_SEC=7200
+      - NAKAMA_SESSION_REFRESH_TOKEN_EXPIRY_SEC=604800
+
+      # Matchmaker settings (for 50 players per floor)
+      - NAKAMA_MATCHMAKER_MAX_TICKETS=100
+      - NAKAMA_MATCHMAKER_INTERVAL_SEC=5
+    ports:
+      # HTTP API
+      - "7350:7350"
+      # gRPC API
+      - "7349:7349"
+      # Admin Console
+      - "7351:7351"
+    volumes:
+      # Server modules (Lua scripts)
+      - ./modules:/nakama/data/modules
+      # Nakama data directory
+      - ./data:/nakama/data/tower
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7350/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tower_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  tower_network:
+    driver: bridge

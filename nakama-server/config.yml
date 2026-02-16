@@ -1,0 +1,94 @@
+# Nakama Server Configuration for Tower Game
+# https://heroiclabs.com/docs/nakama/getting-started/configuration/
+
+name: tower-game-server
+log:
+  level: INFO
+  stdout: true
+  file: ""
+
+socket:
+  # WebSocket/real-time settings
+  server_key: "tower_game_default_server_key_CHANGE_IN_PRODUCTION"
+  port: 7350
+  max_message_size_bytes: 16384  # 16KB max message size
+  outgoing_queue_size: 128       # Outgoing message buffer
+  read_buffer_size_bytes: 4096
+  write_buffer_size_bytes: 4096
+  write_wait_ms: 5000
+  pong_wait_ms: 60000
+  ping_period_ms: 30000
+  ping_backoff_threshold: 20
+
+session:
+  # JWT token settings
+  encryption_key: "tower_game_encryption_key_CHANGE_IN_PRODUCTION"
+  token_expiry_sec: 7200         # 2 hours
+  refresh_token_expiry_sec: 604800  # 7 days
+  single_socket: false           # Allow multiple connections per user
+  single_match: false            # Allow user in multiple matches
+  single_party: false            # Allow user in multiple parties
+
+runtime:
+  # Lua/Go runtime for server-side logic
+  path: "/nakama/data/modules"
+  http_key: "tower_game_http_key_CHANGE_IN_PRODUCTION"
+  min_count: 1
+  max_count: 4
+  call_stack_size: 128
+  env:
+    - TOWER_SEED: "42"           # Default tower seed
+    - MAX_FLOOR: "1000"          # Maximum floor number
+    - PLAYERS_PER_FLOOR: "50"    # Max concurrent players per floor
+
+matchmaker:
+  # Matchmaking settings (for floor lobbies)
+  max_tickets: 100
+  interval_sec: 5
+  max_intervals: 12
+  revthreshold: 99.0
+
+match:
+  # Match settings (floor instances)
+  input_queue_size: 128
+  call_queue_size: 128
+  join_attempt_queue_size: 128
+  join_marker_deadline_ms: 15000
+  max_empty_sec: 300             # Auto-close empty floors after 5 minutes
+  label_update_interval_ms: 1000
+
+leaderboard:
+  # Tower climbing leaderboards
+  blacklist_rank_cache:
+    - "seasonal_tower_climb"     # Seasonal leaderboard
+    - "all_time_highest_floor"   # All-time leaderboard
+    - "fastest_floor_clear"      # Speedrun leaderboard
+
+database:
+  # PostgreSQL connection
+  addresses:
+    - "postgres:5432"
+  name: nakama
+  user: nakama
+  password: tower_db_password_2026
+  conn_max_lifetime_ms: 0
+  max_open_conns: 100
+  max_idle_conns: 10
+
+console:
+  # Admin console (http://localhost:7351)
+  port: 7351
+  username: "admin"
+  password: "tower_admin_password_CHANGE_IN_PRODUCTION"
+  signing_key: "tower_console_signing_key_CHANGE_IN_PRODUCTION"
+  token_expiry_sec: 86400        # 24 hours
+  max_message_size_bytes: 16384
+
+metrics:
+  # Prometheus metrics endpoint
+  prometheus_port: 0             # Disabled (enable for production monitoring)
+
+storage:
+  # Storage collections disabled (we use Rust/Bevy state)
+  disable_write_permissions_check: false
+  disable_list_limit_check: false

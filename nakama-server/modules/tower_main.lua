@@ -1,12 +1,14 @@
--- Tower Game - Main Nakama Server Module
+-- Tower Game - Main Nakama Server Module v0.6.0
 -- Authoritative server for Tower MMORPG
 --
 -- Responsibilities:
 -- 1. Tower seed management (single source of truth)
--- 2. Player state persistence (floor, inventory, faction)
+-- 2. Player state persistence (floor, inventory, faction, mastery)
 -- 3. Floor instance matchmaking (up to 50 players per floor)
 -- 4. Seed + Delta synchronization
--- 5. Leaderboards (highest floor, fastest clear, most echoes)
+-- 5. Leaderboards (highest floor, fastest clear, mastery ranking)
+-- 6. Analytics aggregation (combat stats, economy metrics)
+-- 7. Anti-cheat validation (damage, progression, gold)
 
 local nk = require("nakama")
 
@@ -39,7 +41,7 @@ local function get_tower_seed()
             collection = GLOBAL_STATE_COLLECTION,
             key = TOWER_SEED_KEY,
             user_id = nil,
-            value = { seed = seed, epoch = epoch, version = "0.3.0" },
+            value = { seed = seed, epoch = epoch, version = "0.6.0" },
             permission_read = 2, -- public read
             permission_write = 0, -- server only write
         }
@@ -292,7 +294,7 @@ nk.register_rpc(function(context, payload)
     local seed, epoch = get_tower_seed()
     return nk.json_encode({
         status = "healthy",
-        version = "0.3.0",
+        version = "0.6.0",
         tower_seed = seed,
         server_time = os.time(),
     })
@@ -391,5 +393,5 @@ pcall(setup_leaderboards)
 
 -- ============ Module Load ============
 
-nk.logger_info("Tower Game server module loaded (v0.3.0)")
+nk.logger_info("Tower Game server module loaded (v0.6.0)")
 nk.logger_info("RPC endpoints: get_tower_seed, request_floor, report_floor_clear, report_death, get_floor_echoes, update_faction, get_player_state, health_check, join_floor_match, list_active_matches")

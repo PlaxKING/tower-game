@@ -1,0 +1,23 @@
+# Nakama Server - Don't commit these files
+
+# Environment variables (contains passwords)
+.env
+
+# Database data
+data/
+*.db
+*.sqlite
+
+# Docker volumes
+postgres_data/
+
+# Nakama runtime
+runtime/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
