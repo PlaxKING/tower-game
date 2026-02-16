@@ -132,7 +132,7 @@ void UTowerMapWidget::ParseMapJson()
 
 			FTowerFloorEntry Entry;
 			Entry.FloorId = FloorObj->GetIntegerField(TEXT("floor_id"));
-			Entry.Tier = TierEnumToIndex(ETowerTier::Echelon1); // Parse from JSON
+			Entry.Tier = ETowerTier::Echelon1; // Parse from JSON (TODO: parse actual tier from JSON)
 			Entry.bDiscovered = FloorObj->GetBoolField(TEXT("discovered"));
 			Entry.bCleared = FloorObj->GetBoolField(TEXT("cleared"));
 			Entry.CompletionPercent = FloorObj->GetNumberField(TEXT("completion_percent"));
@@ -265,7 +265,7 @@ void UTowerMapWidget::RebuildFloorList()
 	FloorListBox->ClearChildren();
 
 	// Filter and sort floors
-	TArray<uint32> FloorIds;
+	TArray<int32> FloorIds;
 	for (const auto& Pair : CachedFloors)
 	{
 		// Apply tier filter
@@ -295,7 +295,7 @@ void UTowerMapWidget::RebuildFloorList()
 	}
 
 	// Create floor entries
-	for (uint32 FloorId : FloorIds)
+	for (int32 FloorId : FloorIds)
 	{
 		const FTowerFloorEntry& Entry = CachedFloors[FloorId];
 
@@ -562,7 +562,7 @@ int32 UTowerMapWidget::TierEnumToIndex(ETowerTier Tier) const
 	return static_cast<int32>(Tier);
 }
 
-void UTowerMapWidget::UpdateFloorProgress(uint32 FloorId)
+void UTowerMapWidget::UpdateFloorProgress(int32 FloorId)
 {
 	FProceduralCoreBridge* Bridge = GetBridge();
 	if (!Bridge || !Bridge->IsInitialized())
@@ -587,8 +587,8 @@ void UTowerMapWidget::UpdateFloorProgress(uint32 FloorId)
 	}
 }
 
-void UTowerMapWidget::DiscoverFloor(uint32 FloorId, ETowerTier Tier, uint32 TotalRooms,
-                                     uint32 TotalMonsters, uint32 TotalChests)
+void UTowerMapWidget::DiscoverFloor(int32 FloorId, ETowerTier Tier, int32 TotalRooms,
+                                     int32 TotalMonsters, int32 TotalChests)
 {
 	FProceduralCoreBridge* Bridge = GetBridge();
 	if (!Bridge || !Bridge->IsInitialized())
@@ -613,7 +613,7 @@ void UTowerMapWidget::DiscoverFloor(uint32 FloorId, ETowerTier Tier, uint32 Tota
 	UpdateFloorProgress(FloorId);
 }
 
-void UTowerMapWidget::ClearFloor(uint32 FloorId, float ClearTimeSecs)
+void UTowerMapWidget::ClearFloor(int32 FloorId, float ClearTimeSecs)
 {
 	FTowerFloorEntry* Entry = CachedFloors.Find(FloorId);
 	if (Entry)
@@ -625,7 +625,7 @@ void UTowerMapWidget::ClearFloor(uint32 FloorId, float ClearTimeSecs)
 	}
 }
 
-void UTowerMapWidget::RecordDeath(uint32 FloorId)
+void UTowerMapWidget::RecordDeath(int32 FloorId)
 {
 	FTowerFloorEntry* Entry = CachedFloors.Find(FloorId);
 	if (Entry)
@@ -636,7 +636,7 @@ void UTowerMapWidget::RecordDeath(uint32 FloorId)
 	}
 }
 
-void UTowerMapWidget::DiscoverRoom(uint32 FloorId)
+void UTowerMapWidget::DiscoverRoom(int32 FloorId)
 {
 	FTowerFloorEntry* Entry = CachedFloors.Find(FloorId);
 	if (Entry && Entry->DiscoveredRooms < Entry->TotalRooms)
@@ -649,7 +649,7 @@ void UTowerMapWidget::DiscoverRoom(uint32 FloorId)
 	}
 }
 
-void UTowerMapWidget::KillMonster(uint32 FloorId)
+void UTowerMapWidget::KillMonster(int32 FloorId)
 {
 	FTowerFloorEntry* Entry = CachedFloors.Find(FloorId);
 	if (Entry && Entry->MonstersKilled < Entry->TotalMonsters)
@@ -672,7 +672,7 @@ FTowerMapOverview UTowerMapWidget::GetOverview() const
 	return CurrentOverview;
 }
 
-bool UTowerMapWidget::GetFloorEntry(uint32 FloorId, FTowerFloorEntry& OutEntry) const
+bool UTowerMapWidget::GetFloorEntry(int32 FloorId, FTowerFloorEntry& OutEntry) const
 {
 	const FTowerFloorEntry* Entry = CachedFloors.Find(FloorId);
 	if (Entry)
@@ -697,7 +697,7 @@ void UTowerMapWidget::RefreshFloorList()
 	RebuildFloorList();
 }
 
-void UTowerMapWidget::ShowFloorDetail(uint32 FloorId)
+void UTowerMapWidget::ShowFloorDetail(int32 FloorId)
 {
 	SelectedFloorId = FloorId;
 
@@ -745,7 +745,7 @@ void UTowerMapWidget::OnDetailCloseClicked()
 	HideFloorDetail();
 }
 
-void UTowerMapWidget::OnFloorListItemClicked(uint32 FloorId)
+void UTowerMapWidget::OnFloorListItemClicked(int32 FloorId)
 {
 	ShowFloorDetail(FloorId);
 }

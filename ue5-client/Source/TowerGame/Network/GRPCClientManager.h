@@ -12,7 +12,7 @@
 
 /** Connection state for the Rust procedural core bridge */
 UENUM(BlueprintType)
-enum class EConnectionState : uint8
+enum class EGRPCConnectionState : uint8
 {
 	Disconnected    UMETA(DisplayName = "Disconnected"),
 	Connecting      UMETA(DisplayName = "Connecting"),
@@ -208,8 +208,8 @@ struct FLootItemResult
 /** Fired whenever the connection state changes */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnConnectionStateChanged,
-	EConnectionState, NewState,
-	EConnectionState, OldState
+	EGRPCConnectionState, NewState,
+	EGRPCConnectionState, OldState
 );
 
 /** Fired when any service request completes successfully. RequestId can be correlated by the caller. */
@@ -229,7 +229,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
 
 /** Floor generation response */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FOnFloorGenerated,
+	FOnFloorGeneratedResponse,
 	int64, RequestId,
 	const FString&, FloorJson
 );
@@ -313,10 +313,10 @@ public:
 
 	/** Current connection state */
 	UFUNCTION(BlueprintPure, Category = "gRPC|Connection")
-	bool IsConnected() const { return ConnectionState == EConnectionState::Connected; }
+	bool IsConnected() const { return ConnectionState == EGRPCConnectionState::Connected; }
 
 	UFUNCTION(BlueprintPure, Category = "gRPC|Connection")
-	EConnectionState GetConnectionState() const { return ConnectionState; }
+	EGRPCConnectionState GetConnectionState() const { return ConnectionState; }
 
 	UFUNCTION(BlueprintPure, Category = "gRPC|Connection")
 	ETransportMode GetActiveTransportMode() const { return ActiveTransport; }
@@ -379,7 +379,7 @@ public:
 	FOnGRPCRequestFailed OnRequestFailed;
 
 	UPROPERTY(BlueprintAssignable, Category = "gRPC|Events")
-	FOnFloorGenerated OnFloorGenerated;
+	FOnFloorGeneratedResponse OnFloorGenerated;
 
 	UPROPERTY(BlueprintAssignable, Category = "gRPC|Events")
 	FOnDamageCalculated OnDamageCalculated;
@@ -410,7 +410,7 @@ public:
 private:
 	// ============ Internal state ============
 
-	EConnectionState ConnectionState = EConnectionState::Disconnected;
+	EGRPCConnectionState ConnectionState = EGRPCConnectionState::Disconnected;
 	ETransportMode ActiveTransport = ETransportMode::GRPC;
 
 	/** Monotonically increasing ID for correlating requests */
@@ -451,7 +451,7 @@ private:
 	int64 AllocateRequestId();
 
 	/** Set connection state and broadcast delegate */
-	void SetConnectionState(EConnectionState NewState);
+	void SetConnectionState(EGRPCConnectionState NewState);
 
 	/**
 	 * Send an HTTP POST to the Rust server mimicking a gRPC service call.

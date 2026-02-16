@@ -21,7 +21,7 @@ void UTowerGRPCClientManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	ConnectionState = EConnectionState::Disconnected;
+	ConnectionState = EGRPCConnectionState::Disconnected;
 	ActiveTransport = Config.TransportMode;
 	NextRequestId = 1;
 	ReconnectAttempts = 0;
@@ -48,14 +48,14 @@ void UTowerGRPCClientManager::Deinitialize()
 
 void UTowerGRPCClientManager::Connect()
 {
-	if (ConnectionState == EConnectionState::Connected || ConnectionState == EConnectionState::Connecting)
+	if (ConnectionState == EGRPCConnectionState::Connected || ConnectionState == EGRPCConnectionState::Connecting)
 	{
 		UE_LOG(LogGRPCClient, Warning, TEXT("Connect() called while already %s"),
-			ConnectionState == EConnectionState::Connected ? TEXT("connected") : TEXT("connecting"));
+			ConnectionState == EGRPCConnectionState::Connected ? TEXT("connected") : TEXT("connecting"));
 		return;
 	}
 
-	SetConnectionState(EConnectionState::Connecting);
+	SetConnectionState(EGRPCConnectionState::Connecting);
 	ReconnectAttempts = 0;
 
 	// Attempt primary transport first — send a health check to verify connectivity
@@ -75,7 +75,7 @@ void UTowerGRPCClientManager::Disconnect()
 	}
 
 	InFlightRequests.Empty();
-	SetConnectionState(EConnectionState::Disconnected);
+	SetConnectionState(EGRPCConnectionState::Disconnected);
 
 	UE_LOG(LogGRPCClient, Log, TEXT("Disconnected from Rust procedural core"));
 }
@@ -94,7 +94,7 @@ void UTowerGRPCClientManager::Reconnect()
 		}
 	}
 
-	SetConnectionState(EConnectionState::Reconnecting);
+	SetConnectionState(EGRPCConnectionState::Reconnecting);
 	ReconnectAttempts++;
 
 	float Delay = GetReconnectDelay();
@@ -122,14 +122,14 @@ float UTowerGRPCClientManager::GetReconnectDelay() const
 	return FMath::Min(Delay, 30.0f);
 }
 
-void UTowerGRPCClientManager::SetConnectionState(EConnectionState NewState)
+void UTowerGRPCClientManager::SetConnectionState(EGRPCConnectionState NewState)
 {
 	if (ConnectionState == NewState)
 	{
 		return;
 	}
 
-	EConnectionState OldState = ConnectionState;
+	EGRPCConnectionState OldState = ConnectionState;
 	ConnectionState = NewState;
 
 	UE_LOG(LogGRPCClient, Log, TEXT("Connection state: %d -> %d"), static_cast<int32>(OldState), static_cast<int32>(NewState));
@@ -177,9 +177,9 @@ void UTowerGRPCClientManager::OnHealthCheckResponse(bool bSuccess, const FString
 		ConsecutiveFailures = 0;
 		ReconnectAttempts = 0;
 
-		if (ConnectionState != EConnectionState::Connected)
+		if (ConnectionState != EGRPCConnectionState::Connected)
 		{
-			SetConnectionState(EConnectionState::Connected);
+			SetConnectionState(EGRPCConnectionState::Connected);
 
 			UE_LOG(LogGRPCClient, Log,
 				TEXT("Connected to Rust core at %s:%d via %s"),
@@ -211,14 +211,14 @@ void UTowerGRPCClientManager::OnHealthCheckResponse(bool bSuccess, const FString
 			ConsecutiveFailures, *ResponseBody);
 
 		// If we were connected, try to reconnect
-		if (ConnectionState == EConnectionState::Connected)
+		if (ConnectionState == EGRPCConnectionState::Connected)
 		{
 			Reconnect();
 			return;
 		}
 
 		// If we were trying to connect/reconnect, attempt FFI fallback
-		if (ConnectionState == EConnectionState::Connecting || ConnectionState == EConnectionState::Reconnecting)
+		if (ConnectionState == EGRPCConnectionState::Connecting || ConnectionState == EGRPCConnectionState::Reconnecting)
 		{
 			if (ReconnectAttempts >= Config.MaxRetries)
 			{
@@ -226,13 +226,13 @@ void UTowerGRPCClientManager::OnHealthCheckResponse(bool bSuccess, const FString
 				if (TryLoadFFIBridge())
 				{
 					ActiveTransport = ETransportMode::FFI;
-					SetConnectionState(EConnectionState::Connected);
+					SetConnectionState(EGRPCConnectionState::Connected);
 					UE_LOG(LogGRPCClient, Log, TEXT("Fell back to FFI/DLL bridge"));
 					return;
 				}
 
 				// No fallback available
-				SetConnectionState(EConnectionState::Error);
+				SetConnectionState(EGRPCConnectionState::Error);
 				UE_LOG(LogGRPCClient, Error,
 					TEXT("Failed to connect after %d attempts and FFI fallback unavailable"),
 					Config.MaxRetries);
@@ -373,7 +373,7 @@ void UTowerGRPCClientManager::SendRequest(
 	int64 RequestId,
 	TFunction<void(bool bSuccess, const FString& ResponseBody)> OnResponse)
 {
-	if (ConnectionState != EConnectionState::Connected && ConnectionState != EConnectionState::Connecting)
+	if (ConnectionState != EGRPCConnectionState::Connected && ConnectionState != EGRPCConnectionState::Connecting)
 	{
 		UE_LOG(LogGRPCClient, Warning,
 			TEXT("SendRequest(%s) dropped — not connected (state: %d)"),
@@ -443,7 +443,7 @@ void UTowerGRPCClientManager::SendRequest(
 				OnResponse(false, TEXT("{\"error\":\"connection_failed\"}"));
 
 				// Trigger reconnect if we thought we were connected
-				if (ConnectionState == EConnectionState::Connected)
+				if (ConnectionState == EGRPCConnectionState::Connected)
 				{
 					Reconnect();
 				}

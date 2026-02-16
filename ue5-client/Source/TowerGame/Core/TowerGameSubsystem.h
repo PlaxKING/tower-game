@@ -2,9 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Bridge/ProceduralCoreBridge.h"
 #include "TowerGameSubsystem.generated.h"
-
-class FProceduralCoreBridge;
 
 /**
  * Game Instance Subsystem — owns the Rust DLL bridge.

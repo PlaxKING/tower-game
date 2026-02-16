@@ -21,7 +21,8 @@ public class TowerGame : ModuleRules
             "HTTP",
             "Slate",
             "SlateCore",
-            "WebSockets"
+            "WebSockets",
+            "NavigationSystem"
         });
 
         PrivateDependencyModuleNames.AddRange(new string[] {
@@ -37,19 +38,23 @@ public class TowerGame : ModuleRules
         // Rust Procedural Core DLL Integration (tower_core.dll v0.6.0)
         // ============================================================
 
-        // Path to the Rust DLL (relative to project root)
+        // Path to the Rust DLL (MSVC build for proper .lib generation)
         string ProjectRoot = Path.GetFullPath(Path.Combine(ModuleDirectory, "../../.."));
-        string RustDllPath = Path.Combine(ProjectRoot, "../procedural-core/target/release/tower_core.dll");
-        string BinariesDir = Path.Combine(ModuleDirectory, "../../Binaries/Win64");
-        string TargetDllPath = Path.Combine(BinariesDir, "tower_core.dll");
+        string RustBuildDir = Path.Combine(ProjectRoot, "../procedural-core/target/x86_64-pc-windows-msvc/release");
+        string RustDllPath = Path.Combine(RustBuildDir, "tower_core.dll");
+        string RustLibPath = Path.Combine(RustBuildDir, "tower_core.dll.lib");
 
-        // Ensure Binaries directory exists
-        if (!Directory.Exists(BinariesDir))
+        string PluginBinDir = Path.Combine(ModuleDirectory, "../../Plugins/ProceduralCore/Binaries/Win64");
+        string TargetDllPath = Path.Combine(PluginBinDir, "tower_core.dll");
+        string TargetLibPath = Path.Combine(PluginBinDir, "tower_core.dll.lib");
+
+        // Ensure Plugin Binaries directory exists
+        if (!Directory.Exists(PluginBinDir))
         {
-            Directory.CreateDirectory(BinariesDir);
+            Directory.CreateDirectory(PluginBinDir);
         }
 
-        // Copy DLL to Binaries folder if source exists
+        // Copy DLL to Plugin Binaries folder if source exists
         if (File.Exists(RustDllPath))
         {
             if (!File.Exists(TargetDllPath) ||
@@ -58,6 +63,19 @@ public class TowerGame : ModuleRules
                 File.Copy(RustDllPath, TargetDllPath, true);
             }
         }
+
+        // Copy .lib to Plugin Binaries folder for linking
+        if (File.Exists(RustLibPath))
+        {
+            if (!File.Exists(TargetLibPath) ||
+                File.GetLastWriteTime(RustLibPath) > File.GetLastWriteTime(TargetLibPath))
+            {
+                File.Copy(RustLibPath, TargetLibPath, true);
+            }
+        }
+
+        // Tell linker where to find the import library
+        PublicAdditionalLibraries.Add(TargetLibPath);
 
         // Tell UE5 to delay-load the DLL
         PublicDelayLoadDLLs.Add("tower_core.dll");

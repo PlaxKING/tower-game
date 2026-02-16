@@ -15,7 +15,7 @@ extern "C" {
 	uint32_t get_save_version(const char* save_json);
 	uint32_t get_current_save_version();
 	uint32_t validate_save(const char* save_json);
-	void free_rust_string(char* ptr);
+	void free_string(const char* ptr);
 }
 
 USaveMigrationWidget::USaveMigrationWidget(const FObjectInitializer& ObjectInitializer)
@@ -312,7 +312,7 @@ FString USaveMigrationWidget::CallMigrateSave(const FString& SaveJson)
 	FString Result = FString(UTF8_TO_TCHAR(ResultCStr));
 
 	// Free Rust-allocated string
-	free_rust_string(const_cast<char*>(ResultCStr));
+	free_string(ResultCStr);
 
 	return Result;
 }

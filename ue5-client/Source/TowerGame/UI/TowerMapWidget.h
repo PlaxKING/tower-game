@@ -30,21 +30,21 @@ struct FTowerFloorEntry
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite) uint32 FloorId = 0;
+	UPROPERTY(BlueprintReadWrite) int32 FloorId = 0;
 	UPROPERTY(BlueprintReadWrite) ETowerTier Tier = ETowerTier::Echelon1;
 	UPROPERTY(BlueprintReadWrite) bool bDiscovered = false;
 	UPROPERTY(BlueprintReadWrite) bool bCleared = false;
 	UPROPERTY(BlueprintReadWrite) float CompletionPercent = 0.0f;
 	UPROPERTY(BlueprintReadWrite) float BestClearTimeSecs = 0.0f;
-	UPROPERTY(BlueprintReadWrite) uint32 DeathCount = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 DiscoveredRooms = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalRooms = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 DiscoveredSecrets = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalSecrets = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 MonstersKilled = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalMonsters = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 ChestsOpened = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalChests = 0;
+	UPROPERTY(BlueprintReadWrite) int32 DeathCount = 0;
+	UPROPERTY(BlueprintReadWrite) int32 DiscoveredRooms = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalRooms = 0;
+	UPROPERTY(BlueprintReadWrite) int32 DiscoveredSecrets = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalSecrets = 0;
+	UPROPERTY(BlueprintReadWrite) int32 MonstersKilled = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalMonsters = 0;
+	UPROPERTY(BlueprintReadWrite) int32 ChestsOpened = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalChests = 0;
 	UPROPERTY(BlueprintReadWrite) FString ShrineFacton;
 	UPROPERTY(BlueprintReadWrite) FString Notes;
 };
@@ -55,15 +55,15 @@ struct FTowerMapOverview
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite) uint32 HighestFloor = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalDiscovered = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalCleared = 0;
-	UPROPERTY(BlueprintReadWrite) uint32 TotalDeaths = 0;
+	UPROPERTY(BlueprintReadWrite) int32 HighestFloor = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalDiscovered = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalCleared = 0;
+	UPROPERTY(BlueprintReadWrite) int32 TotalDeaths = 0;
 	UPROPERTY(BlueprintReadWrite) float AverageCompletion = 0.0f;
 	UPROPERTY(BlueprintReadWrite) float TotalPlaytimeHours = 0.0f;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_One_Param(FOnFloorSelected, const FTowerFloorEntry&, FloorEntry);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFloorSelected, FTowerFloorEntry, FloorEntry);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapUpdated);
 
 /**
@@ -99,28 +99,28 @@ public:
 
 	/// Update single floor progress (called when floor is discovered/cleared/progressed)
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	void UpdateFloorProgress(uint32 FloorId);
+	void UpdateFloorProgress(int32 FloorId);
 
 	/// Discover a new floor (syncs with Rust backend)
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	void DiscoverFloor(uint32 FloorId, ETowerTier Tier, uint32 TotalRooms,
-	                    uint32 TotalMonsters, uint32 TotalChests);
+	void DiscoverFloor(int32 FloorId, ETowerTier Tier, int32 TotalRooms,
+	                    int32 TotalMonsters, int32 TotalChests);
 
 	/// Mark floor as cleared
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	void ClearFloor(uint32 FloorId, float ClearTimeSecs);
+	void ClearFloor(int32 FloorId, float ClearTimeSecs);
 
 	/// Record a death on floor
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	void RecordDeath(uint32 FloorId);
+	void RecordDeath(int32 FloorId);
 
 	/// Record room discovered on floor
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	void DiscoverRoom(uint32 FloorId);
+	void DiscoverRoom(int32 FloorId);
 
 	/// Record monster killed on floor
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	void KillMonster(uint32 FloorId);
+	void KillMonster(int32 FloorId);
 
 	/// Get current tower map as JSON (for saving)
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
@@ -132,7 +132,7 @@ public:
 
 	/// Get specific floor entry by ID
 	UFUNCTION(BlueprintCallable, Category = "TowerMap")
-	bool GetFloorEntry(uint32 FloorId, FTowerFloorEntry& OutEntry) const;
+	bool GetFloorEntry(int32 FloorId, FTowerFloorEntry& OutEntry) const;
 
 	// --- UI Interactions ---
 
@@ -146,7 +146,7 @@ public:
 
 	/// Show detail view for floor
 	UFUNCTION(BlueprintCallable, Category = "TowerMap|UI")
-	void ShowFloorDetail(uint32 FloorId);
+	void ShowFloorDetail(int32 FloorId);
 
 	/// Hide detail view
 	UFUNCTION(BlueprintCallable, Category = "TowerMap|UI")
@@ -237,14 +237,14 @@ protected:
 	FString CurrentMapJson;
 
 	UPROPERTY()
-	TMap<uint32, FTowerFloorEntry> CachedFloors;
+	TMap<int32, FTowerFloorEntry> CachedFloors;
 
 	UPROPERTY()
 	FTowerMapOverview CurrentOverview;
 
 	int32 CurrentTierFilter = 0; // 0 = All, 1 = Echelon1, etc
 
-	uint32 SelectedFloorId = 0;
+	int32 SelectedFloorId = 0;
 
 	// --- Configuration ---
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TowerMap|Config")
@@ -270,5 +270,5 @@ protected:
 	void OnDetailCloseClicked();
 
 	UFUNCTION()
-	void OnFloorListItemClicked(uint32 FloorId);
+	void OnFloorListItemClicked(int32 FloorId);
 };

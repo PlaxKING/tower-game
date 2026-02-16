@@ -148,7 +148,7 @@ bool UTowerActionSender::SendDodgeAction(FVector Direction)
 	return EnqueueAndSend(Packet);
 }
 
-bool UTowerActionSender::SendAbilityAction(const FString& AbilityId, FVector TargetPos, uint64 TargetEntity)
+bool UTowerActionSender::SendAbilityAction(const FString& AbilityId, FVector TargetPos, int64 TargetEntity)
 {
 	if (bEnableInputValidation && !ValidateStringId(AbilityId))
 	{
@@ -168,7 +168,7 @@ bool UTowerActionSender::SendAbilityAction(const FString& AbilityId, FVector Tar
 	return EnqueueAndSend(Packet);
 }
 
-bool UTowerActionSender::SendInteractAction(uint64 TargetEntity, const FString& InteractionType)
+bool UTowerActionSender::SendInteractAction(int64 TargetEntity, const FString& InteractionType)
 {
 	if (bEnableInputValidation)
 	{
@@ -239,7 +239,7 @@ void UTowerActionSender::ProcessActionResult(const FActionResult& Result)
 	PendingActions.RemoveAt(RemovedIndex);
 }
 
-bool UTowerActionSender::IsActionPending(uint64 SequenceNumber) const
+bool UTowerActionSender::IsActionPending(int64 SequenceNumber) const
 {
 	return PendingActions.ContainsByPredicate(
 		[SequenceNumber](const FPlayerActionPacket& Packet)
@@ -491,7 +491,7 @@ UTowerGRPCClientManager* UTowerActionSender::GetClientManager()
 	return CachedClientManager;
 }
 
-uint64 UTowerActionSender::GetLocalPlayerId() const
+int64 UTowerActionSender::GetLocalPlayerId() const
 {
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (!OwnerPawn) return 0;
@@ -500,5 +500,5 @@ uint64 UTowerActionSender::GetLocalPlayerId() const
 	if (!PS) return 0;
 
 	// Use the engine's unique player ID; the server maps this to its own ID space
-	return static_cast<uint64>(PS->GetPlayerId());
+	return static_cast<int64>(PS->GetPlayerId());
 }

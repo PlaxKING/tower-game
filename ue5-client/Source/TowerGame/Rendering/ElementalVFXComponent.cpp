@@ -12,7 +12,7 @@ void UElementalVFXComponent::BeginPlay()
     Super::BeginPlay();
 
     // Auto-start aura if element is set
-    if (Element != EElementType::None && AuraSystem)
+    if (Element != EElementalType::None && AuraSystem)
     {
         StartAura();
     }
@@ -24,7 +24,7 @@ void UElementalVFXComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
 }
 
-void UElementalVFXComponent::SetElement(EElementType NewElement)
+void UElementalVFXComponent::SetElement(EElementalType NewElement)
 {
     Element = NewElement;
 
@@ -95,30 +95,30 @@ void UElementalVFXComponent::StopAura()
     }
 }
 
-FLinearColor UElementalVFXComponent::GetElementColor(EElementType InElement)
+FLinearColor UElementalVFXComponent::GetElementColor(EElementalType InElement)
 {
     switch (InElement)
     {
-    case EElementType::Fire:       return FLinearColor(1.0f, 0.3f, 0.05f);   // Orange-red
-    case EElementType::Water:      return FLinearColor(0.1f, 0.5f, 1.0f);    // Blue
-    case EElementType::Earth:      return FLinearColor(0.6f, 0.4f, 0.15f);   // Brown
-    case EElementType::Wind:       return FLinearColor(0.7f, 1.0f, 0.8f);    // Pale green
-    case EElementType::Void:       return FLinearColor(0.3f, 0.0f, 0.5f);    // Deep purple
-    case EElementType::Corruption: return FLinearColor(0.1f, 0.0f, 0.1f);    // Dark magenta
+    case EElementalType::Fire:       return FLinearColor(1.0f, 0.3f, 0.05f);   // Orange-red
+    case EElementalType::Water:      return FLinearColor(0.1f, 0.5f, 1.0f);    // Blue
+    case EElementalType::Earth:      return FLinearColor(0.6f, 0.4f, 0.15f);   // Brown
+    case EElementalType::Wind:       return FLinearColor(0.7f, 1.0f, 0.8f);    // Pale green
+    case EElementalType::Void:       return FLinearColor(0.3f, 0.0f, 0.5f);    // Deep purple
+    case EElementalType::Corruption: return FLinearColor(0.1f, 0.0f, 0.1f);    // Dark magenta
     default:                       return FLinearColor(0.8f, 0.8f, 0.8f);    // Neutral gray
     }
 }
 
-FLinearColor UElementalVFXComponent::GetElementSecondaryColor(EElementType InElement)
+FLinearColor UElementalVFXComponent::GetElementSecondaryColor(EElementalType InElement)
 {
     switch (InElement)
     {
-    case EElementType::Fire:       return FLinearColor(1.0f, 0.9f, 0.2f);    // Yellow
-    case EElementType::Water:      return FLinearColor(0.6f, 0.9f, 1.0f);    // Cyan
-    case EElementType::Earth:      return FLinearColor(0.3f, 0.7f, 0.2f);    // Green
-    case EElementType::Wind:       return FLinearColor(1.0f, 1.0f, 1.0f);    // White
-    case EElementType::Void:       return FLinearColor(0.1f, 0.0f, 0.3f);    // Dark blue
-    case EElementType::Corruption: return FLinearColor(0.5f, 0.0f, 0.0f);    // Dark red
+    case EElementalType::Fire:       return FLinearColor(1.0f, 0.9f, 0.2f);    // Yellow
+    case EElementalType::Water:      return FLinearColor(0.6f, 0.9f, 1.0f);    // Cyan
+    case EElementalType::Earth:      return FLinearColor(0.3f, 0.7f, 0.2f);    // Green
+    case EElementalType::Wind:       return FLinearColor(1.0f, 1.0f, 1.0f);    // White
+    case EElementalType::Void:       return FLinearColor(0.1f, 0.0f, 0.3f);    // Dark blue
+    case EElementalType::Corruption: return FLinearColor(0.5f, 0.0f, 0.0f);    // Dark red
     default:                       return FLinearColor(0.5f, 0.5f, 0.5f);    // Gray
     }
 }
@@ -153,7 +153,7 @@ void UElementalVFXComponent::ApplyElementParameters(UNiagaraComponent* NiagaraCo
     FLinearColor SecColor = GetElementSecondaryColor(Element);
 
     // Blend secondary element if present
-    if (SecondaryElement != EElementType::None)
+    if (SecondaryElement != EElementalType::None)
     {
         FLinearColor SecElementColor = GetElementColor(SecondaryElement);
         PrimaryColor = FLinearColor::LerpUsingHSV(PrimaryColor, SecElementColor, 0.3f);

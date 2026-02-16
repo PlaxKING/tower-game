@@ -85,12 +85,12 @@ void UCraftingWidget::PlaceMaterial(int32 SlotIndex, const FString& ItemName,
 {
     if (SlotIndex < 0 || SlotIndex >= MaterialSlots.Num()) return;
 
-    FCraftMaterialSlot& Slot = MaterialSlots[SlotIndex];
-    Slot.ItemName = ItemName;
-    Slot.Rarity = Rarity;
-    Slot.TagNames = TagNames;
-    Slot.TagValues = TagValues;
-    Slot.bOccupied = true;
+    FCraftMaterialSlot& MatSlot = MaterialSlots[SlotIndex];
+    MatSlot.ItemName = ItemName;
+    MatSlot.Rarity = Rarity;
+    MatSlot.TagNames = TagNames;
+    MatSlot.TagValues = TagValues;
+    MatSlot.bOccupied = true;
 
     UpdateMaterialSlots();
     UpdatePreview();
@@ -107,9 +107,9 @@ void UCraftingWidget::ClearSlot(int32 SlotIndex)
 
 void UCraftingWidget::ClearAllSlots()
 {
-    for (FCraftMaterialSlot& Slot : MaterialSlots)
+    for (FCraftMaterialSlot& MatSlot : MaterialSlots)
     {
-        Slot = FCraftMaterialSlot();
+        MatSlot = FCraftMaterialSlot();
     }
     UpdateMaterialSlots();
     UpdatePreview();
@@ -296,9 +296,9 @@ void UCraftingWidget::UpdatePreview()
 
     // Count placed materials
     int32 PlacedCount = 0;
-    for (const FCraftMaterialSlot& Slot : MaterialSlots)
+    for (const FCraftMaterialSlot& MatSlot : MaterialSlots)
     {
-        if (Slot.bOccupied) PlacedCount++;
+        if (MatSlot.bOccupied) PlacedCount++;
     }
 
     // Check requirements
@@ -406,21 +406,21 @@ float UCraftingWidget::CalculateSimilarity() const
     TMap<FString, float> CombinedTags;
     int32 OccupiedCount = 0;
 
-    for (const FCraftMaterialSlot& Slot : MaterialSlots)
+    for (const FCraftMaterialSlot& MatSlot : MaterialSlots)
     {
-        if (!Slot.bOccupied) continue;
+        if (!MatSlot.bOccupied) continue;
         OccupiedCount++;
 
-        for (int32 i = 0; i < Slot.TagNames.Num() && i < Slot.TagValues.Num(); i++)
+        for (int32 i = 0; i < MatSlot.TagNames.Num() && i < MatSlot.TagValues.Num(); i++)
         {
-            float* Existing = CombinedTags.Find(Slot.TagNames[i]);
+            float* Existing = CombinedTags.Find(MatSlot.TagNames[i]);
             if (Existing)
             {
-                *Existing += Slot.TagValues[i];
+                *Existing += MatSlot.TagValues[i];
             }
             else
             {
-                CombinedTags.Add(Slot.TagNames[i], Slot.TagValues[i]);
+                CombinedTags.Add(MatSlot.TagNames[i], MatSlot.TagValues[i]);
             }
         }
     }

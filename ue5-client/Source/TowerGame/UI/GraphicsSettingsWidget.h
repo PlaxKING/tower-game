@@ -12,7 +12,7 @@ class UCheckBox;
 
 /// Graphics quality preset
 UENUM(BlueprintType)
-enum class EGraphicsPreset : uint8
+enum class ETowerGraphicsPreset : uint8
 {
     Low,
     Medium,
@@ -27,7 +27,7 @@ struct FGraphicsSettings
 {
     GENERATED_BODY()
 
-    UPROPERTY(BlueprintReadWrite) EGraphicsPreset Preset = EGraphicsPreset::High;
+    UPROPERTY(BlueprintReadWrite) ETowerGraphicsPreset Preset = ETowerGraphicsPreset::High;
     UPROPERTY(BlueprintReadWrite) FIntPoint Resolution = FIntPoint(1920, 1080);
     UPROPERTY(BlueprintReadWrite) bool bFullscreen = true;
     UPROPERTY(BlueprintReadWrite) bool bBorderlessWindowed = false;
@@ -66,7 +66,7 @@ public:
 
     UFUNCTION(BlueprintCallable) void ApplySettings();
     UFUNCTION(BlueprintCallable) void RevertSettings();
-    UFUNCTION(BlueprintCallable) void ApplyPreset(EGraphicsPreset Preset);
+    UFUNCTION(BlueprintCallable) void ApplyPreset(ETowerGraphicsPreset Preset);
     UFUNCTION(BlueprintCallable) void DetectOptimalSettings();
 
     UFUNCTION(BlueprintPure) FGraphicsSettings GetCurrentSettings() const { return CurrentSettings; }

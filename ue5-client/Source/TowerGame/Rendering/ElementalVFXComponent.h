@@ -13,7 +13,7 @@ class UNiagaraComponent;
  * Each element has distinct particle behavior and color palette.
  */
 UENUM(BlueprintType)
-enum class EElementType : uint8
+enum class EElementalType : uint8
 {
     None        UMETA(DisplayName = "None"),
     Fire        UMETA(DisplayName = "Fire"),
@@ -74,11 +74,11 @@ public:
 
     /** Primary element for this actor */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Element")
-    EElementType Element = EElementType::None;
+    EElementalType Element = EElementalType::None;
 
     /** Secondary element (for hybrid monsters) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Element")
-    EElementType SecondaryElement = EElementType::None;
+    EElementalType SecondaryElement = EElementalType::None;
 
     /** Overall VFX intensity multiplier */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Element", meta = (ClampMin = "0.0", ClampMax = "5.0"))
@@ -114,7 +114,7 @@ public:
 
     /** Set element at runtime (updates all active VFX) */
     UFUNCTION(BlueprintCallable, Category = "VFX|Element")
-    void SetElement(EElementType NewElement);
+    void SetElement(EElementalType NewElement);
 
     /** Trigger a one-shot VFX */
     UFUNCTION(BlueprintCallable, Category = "VFX|Element")
@@ -134,11 +134,11 @@ public:
 
     /** Get color for an element type */
     UFUNCTION(BlueprintPure, Category = "VFX|Element")
-    static FLinearColor GetElementColor(EElementType InElement);
+    static FLinearColor GetElementColor(EElementalType InElement);
 
     /** Get secondary color for element (used for gradient/accents) */
     UFUNCTION(BlueprintPure, Category = "VFX|Element")
-    static FLinearColor GetElementSecondaryColor(EElementType InElement);
+    static FLinearColor GetElementSecondaryColor(EElementalType InElement);
 
 private:
     UPROPERTY()

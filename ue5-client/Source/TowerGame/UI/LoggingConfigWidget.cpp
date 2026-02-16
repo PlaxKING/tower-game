@@ -288,9 +288,9 @@ void ULoggingConfigWidget::UpdateModuleFilterDisplay()
 				RemoveButton->AddChild(ButtonText);
 			}
 
-			// Capture index for lambda
-			int32 FilterIndex = i;
-			RemoveButton->OnClicked.AddDynamic(this, &ULoggingConfigWidget::RemoveModuleFilter);
+			// TODO: UButton::OnClicked doesn't support parameters - need to store index in button tag
+			// int32 FilterIndex = i;
+			// RemoveButton->OnClicked.AddDynamic(this, &ULoggingConfigWidget::RemoveModuleFilter);
 
 			FilterRow->AddChild(RemoveButton);
 		}

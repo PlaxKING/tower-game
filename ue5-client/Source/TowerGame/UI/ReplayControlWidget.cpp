@@ -181,7 +181,7 @@ void UReplayControlWidget::Stop()
     UpdateUI();
 }
 
-void UReplayControlWidget::SeekToFrame(uint32 FrameIndex)
+void UReplayControlWidget::SeekToFrame(int32 FrameIndex)
 {
     if (FrameIndex >= TotalFrames)
     {
@@ -204,7 +204,7 @@ void UReplayControlWidget::SeekToFrame(uint32 FrameIndex)
     UpdateUI();
 }
 
-void UReplayControlWidget::SeekToTick(uint64 Tick)
+void UReplayControlWidget::SeekToTick(int64 Tick)
 {
     if (TotalTicks > 0)
     {

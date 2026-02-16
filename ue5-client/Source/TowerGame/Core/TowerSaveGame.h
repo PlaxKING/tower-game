@@ -79,7 +79,7 @@ public:
 
     // --- Progress ---
     UPROPERTY(BlueprintReadWrite) int32 CurrentFloor = 1;
-    UPROPERTY(BlueprintReadWrite) uint64 TowerSeed = 0;
+    UPROPERTY(BlueprintReadWrite) int64 TowerSeed = 0;
     UPROPERTY(BlueprintReadWrite) FPlayerSaveStats Stats;
 
     // --- Inventory ---

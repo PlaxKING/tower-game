@@ -83,11 +83,11 @@ public:
 
     /** Seek to specific frame index */
     UFUNCTION(BlueprintCallable, Category = "Replay")
-    void SeekToFrame(uint32 FrameIndex);
+    void SeekToFrame(int32 FrameIndex);
 
     /** Seek to specific tick value */
     UFUNCTION(BlueprintCallable, Category = "Replay")
-    void SeekToTick(uint64 Tick);
+    void SeekToTick(int64 Tick);
 
     // ============ State Queries ============
 
@@ -95,10 +95,10 @@ public:
     EReplayState GetReplayState() const { return CurrentState; }
 
     UFUNCTION(BlueprintPure, Category = "Replay")
-    uint32 GetCurrentFrameIndex() const { return CurrentFrameIndex; }
+    int32 GetCurrentFrameIndex() const { return CurrentFrameIndex; }
 
     UFUNCTION(BlueprintPure, Category = "Replay")
-    uint32 GetTotalFrames() const { return TotalFrames; }
+    int32 GetTotalFrames() const { return TotalFrames; }
 
     UFUNCTION(BlueprintPure, Category = "Replay")
     float GetPlaybackSpeed() const { return PlaybackSpeed; }
@@ -198,10 +198,10 @@ private:
     FString PlaybackJson;  // JSON returned from replay_create_playback
 
     // Playback parameters
-    uint32 CurrentFrameIndex = 0;
-    uint32 TotalFrames = 0;
-    uint64 CurrentTick = 0;
-    uint64 TotalTicks = 0;
+    int32 CurrentFrameIndex = 0;
+    int32 TotalFrames = 0;
+    int64 CurrentTick = 0;
+    int64 TotalTicks = 0;
     float PlaybackSpeed = 1.0f;
     bool bLoopPlayback = false;
     bool bScrubbing = false;

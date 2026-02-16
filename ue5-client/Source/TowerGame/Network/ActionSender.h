@@ -78,7 +78,7 @@ struct FAbilityActionData
 	FVector TargetPosition = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint64 TargetEntity = 0;
+	int64 TargetEntity = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -87,7 +87,7 @@ struct FInteractActionData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint64 TargetEntity = 0;
+	int64 TargetEntity = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString InteractionType;
@@ -99,7 +99,7 @@ struct FPlayerActionPacket
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	uint64 PlayerId = 0;
+	int64 PlayerId = 0;
 
 	UPROPERTY(BlueprintReadOnly)
 	EPlayerActionType ActionType = EPlayerActionType::Move;
@@ -113,7 +113,7 @@ struct FPlayerActionPacket
 	int64 Timestamp = 0;
 
 	UPROPERTY(BlueprintReadOnly)
-	uint64 SequenceNumber = 0;
+	int64 SequenceNumber = 0;
 
 	/** Local time when this packet was created (for timeout tracking) */
 	double LocalSendTime = 0.0;
@@ -125,7 +125,7 @@ struct FActionResult
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	uint64 SequenceNumber = 0;
+	int64 SequenceNumber = 0;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bAccepted = false;
@@ -140,8 +140,8 @@ struct FActionResult
 
 // ============ Delegates ============
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActionAccepted, uint64, SequenceNumber);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionRejected, uint64, SequenceNumber, const FString&, Reason);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActionAccepted, int64, SequenceNumber);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionRejected, int64, SequenceNumber, const FString&, Reason);
 
 /**
  * Queues and sends player actions to the Rust procedural core via gRPC.
@@ -201,10 +201,10 @@ public:
 	bool SendDodgeAction(FVector Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "ActionSender")
-	bool SendAbilityAction(const FString& AbilityId, FVector TargetPos, uint64 TargetEntity);
+	bool SendAbilityAction(const FString& AbilityId, FVector TargetPos, int64 TargetEntity);
 
 	UFUNCTION(BlueprintCallable, Category = "ActionSender")
-	bool SendInteractAction(uint64 TargetEntity, const FString& InteractionType);
+	bool SendInteractAction(int64 TargetEntity, const FString& InteractionType);
 
 	// ============ Result Processing ============
 
@@ -218,7 +218,7 @@ public:
 
 	/** Check if a specific sequence number is still pending */
 	UFUNCTION(BlueprintPure, Category = "ActionSender")
-	bool IsActionPending(uint64 SequenceNumber) const;
+	bool IsActionPending(int64 SequenceNumber) const;
 
 	// ============ Events ============
 
@@ -230,7 +230,7 @@ public:
 
 private:
 	/** Monotonically increasing sequence counter */
-	uint64 SequenceCounter = 0;
+	int64 SequenceCounter = 0;
 
 	/** Actions sent but not yet acknowledged by the server */
 	UPROPERTY()
@@ -278,5 +278,5 @@ private:
 	void PurgeTimedOutActions();
 
 	/** Get current player ID from the owning player state */
-	uint64 GetLocalPlayerId() const;
+	int64 GetLocalPlayerId() const;
 };

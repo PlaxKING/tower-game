@@ -20,7 +20,7 @@
 // In production, this would be in a separate header
 extern "C" {
 	const char* generate_floor_mutators(int32_t seed, int32_t floor_id);
-	void free_rust_string(const char* ptr);
+	void free_string(const char* ptr);
 }
 
 UMutatorWidget::UMutatorWidget(const FObjectInitializer& ObjectInitializer)
@@ -66,7 +66,7 @@ void UMutatorWidget::InitializeForFloor(int32 FloorNumber, int32 Seed)
 		bool bSuccess = ParseMutatorJSON(JsonString);
 
 		// Free the Rust-allocated string
-		free_rust_string(JsonCStr);
+		free_string(JsonCStr);
 
 		if (bSuccess)
 		{

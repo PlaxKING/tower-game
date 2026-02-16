@@ -112,7 +112,7 @@ void USocketWidget::LoadAvailableGems(const FString& GemsJson)
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(GemsJson);
     if (!FJsonSerializer::Deserialize(Reader, Parsed)) return;
 
-    const TArray<TSharedPtr<FJsonValue>>* GemArray;
+    const TArray<TSharedPtr<FJsonValue>>* GemArray = nullptr;
     if (Parsed->AsObject() && Parsed->AsObject()->TryGetArrayField(TEXT("gems"), GemArray))
     {
         // Object with "gems" array
@@ -156,7 +156,7 @@ void USocketWidget::LoadAvailableRunes(const FString& RunesJson)
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(RunesJson);
     if (!FJsonSerializer::Deserialize(Reader, Parsed)) return;
 
-    const TArray<TSharedPtr<FJsonValue>>* RuneArray;
+    const TArray<TSharedPtr<FJsonValue>>* RuneArray = nullptr;
     if (Parsed->AsObject() && Parsed->AsObject()->TryGetArrayField(TEXT("runes"), RuneArray))
     {
         // Object with "runes" array
@@ -889,9 +889,9 @@ void USocketWidget::AddGemToCombine(const FString& GemId)
 
 void USocketWidget::ClearCombineSlots()
 {
-    for (FString& Slot : CombineSlots)
+    for (FString& SlotStr : CombineSlots)
     {
-        Slot.Empty();
+        SlotStr.Empty();
     }
     UpdateCombinePanel();
 }

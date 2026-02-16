@@ -11,6 +11,7 @@
 UENUM(BlueprintType)
 enum class EMatchOpCode : uint8
 {
+    None            = 0,
     PlayerPosition  = 1,
     PlayerAttack    = 2,
     MonsterDamage   = 3,

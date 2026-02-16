@@ -135,7 +135,7 @@ public:
 
     /** Select a cosmetic slot to browse available cosmetics for it */
     UFUNCTION(BlueprintCallable, Category = "Transmog")
-    void SelectSlot(ECosmeticSlot Slot);
+    void SelectSlot(ECosmeticSlot SlotType);
 
     /** Get the currently selected slot */
     UFUNCTION(BlueprintPure, Category = "Transmog")
@@ -145,11 +145,11 @@ public:
 
     /** Apply a cosmetic as a transmog override on a slot */
     UFUNCTION(BlueprintCallable, Category = "Transmog")
-    void ApplyTransmog(ECosmeticSlot Slot, const FString& CosmeticId);
+    void ApplyTransmog(ECosmeticSlot SlotType, const FString& CosmeticId);
 
     /** Remove a transmog override (show actual gear) */
     UFUNCTION(BlueprintCallable, Category = "Transmog")
-    void RemoveTransmog(ECosmeticSlot Slot);
+    void RemoveTransmog(ECosmeticSlot SlotType);
 
     /** Preview a cosmetic without applying (temporary visual) */
     UFUNCTION(BlueprintCallable, Category = "Transmog")
@@ -163,7 +163,7 @@ public:
 
     /** Apply a dye to a cosmetic slot on a specific channel */
     UFUNCTION(BlueprintCallable, Category = "Transmog")
-    void ApplyDye(ECosmeticSlot Slot, EDyeChannel Channel, const FString& DyeId);
+    void ApplyDye(ECosmeticSlot SlotType, EDyeChannel Channel, const FString& DyeId);
 
     /** Select a dye channel to browse available dyes */
     UFUNCTION(BlueprintCallable, Category = "Transmog")
@@ -197,7 +197,7 @@ public:
 
     /** Get cosmetics filtered by slot */
     UFUNCTION(BlueprintPure, Category = "Transmog")
-    TArray<FCosmeticItemDisplay> GetCosmeticsForSlot(ECosmeticSlot Slot) const;
+    TArray<FCosmeticItemDisplay> GetCosmeticsForSlot(ECosmeticSlot SlotType) const;
 
     /** Get all unlocked dyes */
     UFUNCTION(BlueprintPure, Category = "Transmog")
@@ -205,7 +205,7 @@ public:
 
     /** Get the currently active transmog on a slot, empty string if none */
     UFUNCTION(BlueprintPure, Category = "Transmog")
-    FString GetActiveTransmog(ECosmeticSlot Slot) const;
+    FString GetActiveTransmog(ECosmeticSlot SlotType) const;
 
     /** Get active title ID */
     UFUNCTION(BlueprintPure, Category = "Transmog")
@@ -301,7 +301,7 @@ protected:
     /** Get rarity color matching the existing system */
     static FLinearColor GetRarityColor(const FString& Rarity);
     /** Get display name for a cosmetic slot */
-    static FString GetSlotDisplayName(ECosmeticSlot Slot);
+    static FString GetSlotDisplayName(ECosmeticSlot SlotType);
     /** Get display name for a dye channel */
     static FString GetDyeChannelName(EDyeChannel Channel);
     /** Parse ECosmeticSlot from JSON string */

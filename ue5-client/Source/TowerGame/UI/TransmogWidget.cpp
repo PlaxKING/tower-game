@@ -58,7 +58,7 @@ void UTransmogWidget::LoadUnlockedCosmetics(const FString& CosmeticsJson)
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(CosmeticsJson);
     if (!FJsonSerializer::Deserialize(Reader, Parsed)) return;
 
-    const TArray<TSharedPtr<FJsonValue>>* Items;
+    const TArray<TSharedPtr<FJsonValue>>* Items = nullptr;
     // Support both root array and { "cosmetics": [...] } wrapper
     if (Parsed->Type == EJson::Array)
     {
@@ -119,7 +119,7 @@ void UTransmogWidget::LoadUnlockedDyes(const FString& DyesJson)
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(DyesJson);
     if (!FJsonSerializer::Deserialize(Reader, Parsed)) return;
 
-    const TArray<TSharedPtr<FJsonValue>>* Items;
+    const TArray<TSharedPtr<FJsonValue>>* Items = nullptr;
     if (Parsed->Type == EJson::Array)
     {
         Items = &Parsed->AsArray();
@@ -178,14 +178,14 @@ void UTransmogWidget::LoadUnlockedDyes(const FString& DyesJson)
 // Slot Selection
 // ============================================================================
 
-void UTransmogWidget::SelectSlot(ECosmeticSlot Slot)
+void UTransmogWidget::SelectSlot(ECosmeticSlot SlotType)
 {
-    CurrentSlot = Slot;
+    CurrentSlot = SlotType;
     SelectedCosmeticIndex = -1;
 
     if (SelectedSlotNameText)
     {
-        SelectedSlotNameText->SetText(FText::FromString(GetSlotDisplayName(Slot)));
+        SelectedSlotNameText->SetText(FText::FromString(GetSlotDisplayName(SlotType)));
     }
 
     RebuildCosmeticList();
@@ -197,7 +197,7 @@ void UTransmogWidget::SelectSlot(ECosmeticSlot Slot)
 // Transmog Operations
 // ============================================================================
 
-void UTransmogWidget::ApplyTransmog(ECosmeticSlot Slot, const FString& CosmeticId)
+void UTransmogWidget::ApplyTransmog(ECosmeticSlot SlotType, const FString& CosmeticId)
 {
     // Verify cosmetic is unlocked
     const FCosmeticItemDisplay* Found = nullptr;
@@ -216,11 +216,11 @@ void UTransmogWidget::ApplyTransmog(ECosmeticSlot Slot, const FString& CosmeticI
         return;
     }
 
-    ActiveTransmogs.Add(Slot, CosmeticId);
+    ActiveTransmogs.Add(SlotType, CosmeticId);
     bIsPreviewing = false;
     PreviewingCosmeticId.Empty();
 
-    OnTransmogApplied.Broadcast(Slot, CosmeticId);
+    OnTransmogApplied.Broadcast(SlotType, CosmeticId);
 
     if (PreviewStatusText)
     {
@@ -233,14 +233,14 @@ void UTransmogWidget::ApplyTransmog(ECosmeticSlot Slot, const FString& CosmeticI
     UpdateCosmeticDetail();
 }
 
-void UTransmogWidget::RemoveTransmog(ECosmeticSlot Slot)
+void UTransmogWidget::RemoveTransmog(ECosmeticSlot SlotType)
 {
-    if (ActiveTransmogs.Remove(Slot) > 0)
+    if (ActiveTransmogs.Remove(SlotType) > 0)
     {
         if (PreviewStatusText)
         {
             PreviewStatusText->SetText(FText::FromString(
-                FString::Printf(TEXT("Cleared %s override"), *GetSlotDisplayName(Slot))));
+                FString::Printf(TEXT("Cleared %s override"), *GetSlotDisplayName(SlotType))));
             PreviewStatusText->SetColorAndOpacity(FSlateColor(FLinearColor(0.8f, 0.8f, 0.3f)));
         }
 
@@ -289,7 +289,7 @@ void UTransmogWidget::CancelPreview()
 // Dye Operations
 // ============================================================================
 
-void UTransmogWidget::ApplyDye(ECosmeticSlot Slot, EDyeChannel Channel, const FString& DyeId)
+void UTransmogWidget::ApplyDye(ECosmeticSlot SlotType, EDyeChannel Channel, const FString& DyeId)
 {
     // Verify dye is unlocked
     bool bDyeUnlocked = false;
@@ -309,14 +309,14 @@ void UTransmogWidget::ApplyDye(ECosmeticSlot Slot, EDyeChannel Channel, const FS
     }
 
     // Verify slot has a transmog and it is dyeable
-    FString* ActiveId = ActiveTransmogs.Find(Slot);
+    FString* ActiveId = ActiveTransmogs.Find(SlotType);
     if (!ActiveId)
     {
         UE_LOG(LogTemp, Warning, TEXT("TransmogWidget: No transmog on slot to dye"));
         return;
     }
 
-    OnDyeApplied.Broadcast(Slot, Channel, DyeId);
+    OnDyeApplied.Broadcast(SlotType, Channel, DyeId);
     UpdateDyeSwatches();
 }
 
@@ -439,12 +439,12 @@ void UTransmogWidget::SetAura(const FString& AuraId)
 // Queries
 // ============================================================================
 
-TArray<FCosmeticItemDisplay> UTransmogWidget::GetCosmeticsForSlot(ECosmeticSlot Slot) const
+TArray<FCosmeticItemDisplay> UTransmogWidget::GetCosmeticsForSlot(ECosmeticSlot SlotType) const
 {
     TArray<FCosmeticItemDisplay> Filtered;
     for (const FCosmeticItemDisplay& Item : AllCosmetics)
     {
-        if (Item.Slot == Slot)
+        if (Item.Slot == SlotType)
         {
             Filtered.Add(Item);
         }
@@ -465,9 +465,9 @@ TArray<FDyeDisplay> UTransmogWidget::GetUnlockedDyes() const
     return Unlocked;
 }
 
-FString UTransmogWidget::GetActiveTransmog(ECosmeticSlot Slot) const
+FString UTransmogWidget::GetActiveTransmog(ECosmeticSlot SlotType) const
 {
-    const FString* Found = ActiveTransmogs.Find(Slot);
+    const FString* Found = ActiveTransmogs.Find(SlotType);
     return Found ? *Found : FString();
 }
 
@@ -498,13 +498,13 @@ void UTransmogWidget::RebuildSlotGrid()
 
     for (int32 i = 0; i < UE_ARRAY_COUNT(Slots); i++)
     {
-        ECosmeticSlot Slot = Slots[i];
+        ECosmeticSlot SlotType = Slots[i];
 
         UTextBlock* SlotText = NewObject<UTextBlock>(this);
-        FString DisplayName = GetSlotDisplayName(Slot);
+        FString DisplayName = GetSlotDisplayName(SlotType);
 
         // Show active override if present
-        const FString* ActiveId = ActiveTransmogs.Find(Slot);
+        const FString* ActiveId = ActiveTransmogs.Find(SlotType);
         if (ActiveId && !ActiveId->IsEmpty())
         {
             // Find cosmetic name for display
@@ -521,13 +521,13 @@ void UTransmogWidget::RebuildSlotGrid()
         SlotText->SetText(FText::FromString(DisplayName));
 
         // Highlight selected slot
-        FLinearColor Color = (Slot == CurrentSlot)
+        FLinearColor Color = (SlotType == CurrentSlot)
             ? FLinearColor(1.0f, 1.0f, 0.3f) // Selected = yellow
             : (ActiveId ? FLinearColor(0.3f, 1.0f, 0.5f) : FLinearColor(0.6f, 0.6f, 0.6f));
         SlotText->SetColorAndOpacity(FSlateColor(Color));
 
         FSlateFontInfo Font = SlotText->GetFont();
-        Font.Size = (Slot == CurrentSlot) ? 13 : 11;
+        Font.Size = (SlotType == CurrentSlot) ? 13 : 11;
         SlotText->SetFont(Font);
 
         SlotButtonGrid->AddChildToUniformGrid(SlotText, i / 4, i % 4);
@@ -804,9 +804,9 @@ FLinearColor UTransmogWidget::GetRarityColor(const FString& Rarity)
     return FLinearColor(0.6f, 0.6f, 0.6f);
 }
 
-FString UTransmogWidget::GetSlotDisplayName(ECosmeticSlot Slot)
+FString UTransmogWidget::GetSlotDisplayName(ECosmeticSlot SlotType)
 {
-    switch (Slot)
+    switch (SlotType)
     {
     case ECosmeticSlot::HeadOverride:   return TEXT("Head Appearance");
     case ECosmeticSlot::ChestOverride:  return TEXT("Chest Appearance");

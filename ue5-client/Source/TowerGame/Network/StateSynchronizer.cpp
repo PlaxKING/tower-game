@@ -564,7 +564,7 @@ void UTowerStateSynchronizer::BufferSnapshot(const FWorldStateBuffer& Snapshot)
 	if (SnapshotBuffer.Num() >= MaxSnapshotBufferSize)
 	{
 		// Circular buffer: remove the oldest snapshot
-		SnapshotBuffer.RemoveAt(0, EAllowShrinking::No);
+		SnapshotBuffer.RemoveAt(0, 1);
 	}
 
 	SnapshotBuffer.Add(Snapshot);

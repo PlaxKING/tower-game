@@ -82,17 +82,17 @@ void UGraphicsSettingsWidget::RevertSettings()
     UpdateDisplayFromSettings();
 }
 
-void UGraphicsSettingsWidget::ApplyPreset(EGraphicsPreset Preset)
+void UGraphicsSettingsWidget::ApplyPreset(ETowerGraphicsPreset Preset)
 {
     PendingSettings.Preset = Preset;
 
     int32 Quality = 0;
     switch (Preset)
     {
-    case EGraphicsPreset::Low:    Quality = 0; break;
-    case EGraphicsPreset::Medium: Quality = 1; break;
-    case EGraphicsPreset::High:   Quality = 2; break;
-    case EGraphicsPreset::Ultra:  Quality = 3; break;
+    case ETowerGraphicsPreset::Low:    Quality = 0; break;
+    case ETowerGraphicsPreset::Medium: Quality = 1; break;
+    case ETowerGraphicsPreset::High:   Quality = 2; break;
+    case ETowerGraphicsPreset::Ultra:  Quality = 3; break;
     default: return; // Custom: don't change
     }
 
@@ -117,10 +117,10 @@ void UGraphicsSettingsWidget::DetectOptimalSettings()
         GameSettings->RunHardwareBenchmark();
         int32 Overall = GameSettings->GetOverallScalabilityLevel();
 
-        if (Overall <= 0) ApplyPreset(EGraphicsPreset::Low);
-        else if (Overall == 1) ApplyPreset(EGraphicsPreset::Medium);
-        else if (Overall == 2) ApplyPreset(EGraphicsPreset::High);
-        else ApplyPreset(EGraphicsPreset::Ultra);
+        if (Overall <= 0) ApplyPreset(ETowerGraphicsPreset::Low);
+        else if (Overall == 1) ApplyPreset(ETowerGraphicsPreset::Medium);
+        else if (Overall == 2) ApplyPreset(ETowerGraphicsPreset::High);
+        else ApplyPreset(ETowerGraphicsPreset::Ultra);
     }
 }
 
@@ -281,10 +281,10 @@ void UGraphicsSettingsWidget::OnDetectClicked() { DetectOptimalSettings(); }
 
 void UGraphicsSettingsWidget::OnPresetChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-    if (SelectedItem == TEXT("Low"))    ApplyPreset(EGraphicsPreset::Low);
-    else if (SelectedItem == TEXT("Medium")) ApplyPreset(EGraphicsPreset::Medium);
-    else if (SelectedItem == TEXT("High"))   ApplyPreset(EGraphicsPreset::High);
-    else if (SelectedItem == TEXT("Ultra"))  ApplyPreset(EGraphicsPreset::Ultra);
+    if (SelectedItem == TEXT("Low"))    ApplyPreset(ETowerGraphicsPreset::Low);
+    else if (SelectedItem == TEXT("Medium")) ApplyPreset(ETowerGraphicsPreset::Medium);
+    else if (SelectedItem == TEXT("High"))   ApplyPreset(ETowerGraphicsPreset::High);
+    else if (SelectedItem == TEXT("Ultra"))  ApplyPreset(ETowerGraphicsPreset::Ultra);
 }
 
 void UGraphicsSettingsWidget::OnRenderScaleChanged(float Value)
