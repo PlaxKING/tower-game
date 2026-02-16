@@ -37,6 +37,7 @@ docker-data/
 *.swp
 *.swo
 *~
+.claude/settings.local.json
 
 # === OS ===
 .DS_Store
@@ -60,6 +61,12 @@ build/
 # === Logs ===
 *.log
 logs/
+
+# === Temporary analysis files ===
+dll_exports.txt
+dll_objdump.txt
+exports.txt
+dopopensource.txt
 
 # === Project Documentation (личные заметки и отчёты) ===
 project info by plax/
