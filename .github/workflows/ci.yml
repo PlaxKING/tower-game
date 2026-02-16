@@ -23,10 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain (GNU)
+      - name: Install Rust toolchain (MSVC)
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-gnu
+          targets: x86_64-pc-windows-msvc
           components: clippy, rustfmt
 
       - name: Cache cargo registry & build
@@ -58,10 +58,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain (GNU)
+      - name: Install Rust toolchain (MSVC)
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-gnu
+          targets: x86_64-pc-windows-msvc
 
       - name: Cache cargo registry & build
         uses: actions/cache@v4
@@ -98,10 +98,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain (GNU)
+      - name: Install Rust toolchain (MSVC)
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-gnu
+          targets: x86_64-pc-windows-msvc
 
       - name: Cache cargo registry & build
         uses: actions/cache@v4
@@ -116,22 +116,38 @@ jobs:
       - name: Build release
         run: cargo build --release
 
+      - name: Setup Visual Studio Developer Tools
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Verify DLL exports
-        shell: bash
+        shell: pwsh
         run: |
-          DLL="target/release/tower_core.dll"
-          if [ -f "$DLL" ]; then
-            echo "DLL size: $(du -h $DLL | cut -f1)"
-            EXPORTS=$(objdump -p "$DLL" | grep -c "Name:")
-            echo "Export count: $EXPORTS"
-            if [ "$EXPORTS" -lt 100 ]; then
-              echo "ERROR: Expected at least 100 exports, got $EXPORTS"
+          $DLL = "target/release/tower_core.dll"
+          if (Test-Path $DLL) {
+            $size = (Get-Item $DLL).Length / 1MB
+            Write-Output "DLL size: $([math]::Round($size, 2)) MB"
+
+            # Use dumpbin (MSVC tool) to check exports
+            $exports = dumpbin /EXPORTS $DLL | Out-String
+            $exportLines = $exports -split "`n" | Where-Object { $_ -match "^\s+\d+\s+[0-9A-F]+\s+[0-9A-F]+\s+\w+" }
+            $exportCount = $exportLines.Count
+
+            Write-Output "Export count: $exportCount"
+            Write-Output ""
+            Write-Output "Sample exports:"
+            $exportLines | Select-Object -First 10 | ForEach-Object { Write-Output "  $_" }
+
+            if ($exportCount -lt 100) {
+              Write-Error "ERROR: Expected at least 100 exports, got $exportCount"
               exit 1
-            fi
-          else
-            echo "ERROR: DLL not found"
+            }
+
+            Write-Output ""
+            Write-Output "✅ DLL exports verified successfully!"
+          } else {
+            Write-Error "ERROR: DLL not found at $DLL"
             exit 1
-          fi
+          }
 
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
