@@ -1,0 +1,25 @@
+# UE5 client (large binaries, not needed for server build)
+ue5-client/
+procedural-core/
+bevy-test-client/
+
+# Asset pipelines
+blender/
+ai-pipeline/
+
+# Documentation and config
+docs/
+logs/
+config/
+bugfix_engine/
+.tools/
+.github/
+.vscode/
+.git/
+
+# Build artifacts
+*.md
+benchmark_results.txt
+nakama-server/modules_backup/
+
+# Keep: bevy-server/, shared/proto/, scripts/init-db.sh, docker-compose.yml

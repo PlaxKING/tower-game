@@ -514,7 +514,7 @@ void UTowerStateSynchronizer::OnMatchDataReceived(EMatchOpCode OpCode, const FSt
 	bool bAnyChanged = false;
 	for (const FPlayerStateSnapshot& Snap : NewState.PlayerSnapshots)
 	{
-		const uint32 Hash = ComputeEntityStateHash(Snap);
+		const int32 Hash = ComputeEntityStateHash(Snap);
 		if (HasEntityStateChanged(Snap.EntityId, Hash))
 		{
 			PreviousEntityStateHashes.Add(Snap.EntityId, Hash);
@@ -523,7 +523,7 @@ void UTowerStateSynchronizer::OnMatchDataReceived(EMatchOpCode OpCode, const FSt
 	}
 	for (const FMonsterStateSnapshot& Snap : NewState.MonsterSnapshots)
 	{
-		const uint32 Hash = ComputeEntityStateHash(Snap);
+		const int32 Hash = ComputeEntityStateHash(Snap);
 		if (HasEntityStateChanged(Snap.EntityId, Hash))
 		{
 			PreviousEntityStateHashes.Add(Snap.EntityId, Hash);
@@ -574,9 +574,9 @@ void UTowerStateSynchronizer::BufferSnapshot(const FWorldStateBuffer& Snapshot)
 // Delta Compression
 // ============================================================================
 
-uint32 UTowerStateSynchronizer::ComputeEntityStateHash(const FPlayerStateSnapshot& Snapshot) const
+int32 UTowerStateSynchronizer::ComputeEntityStateHash(const FPlayerStateSnapshot& Snapshot) const
 {
-	uint32 Hash = GetTypeHash(Snapshot.EntityId);
+	int32 Hash = GetTypeHash(Snapshot.EntityId);
 	Hash = HashCombine(Hash, GetTypeHash(FMath::RoundToInt(Snapshot.Position.X)));
 	Hash = HashCombine(Hash, GetTypeHash(FMath::RoundToInt(Snapshot.Position.Y)));
 	Hash = HashCombine(Hash, GetTypeHash(FMath::RoundToInt(Snapshot.Position.Z)));
@@ -585,9 +585,9 @@ uint32 UTowerStateSynchronizer::ComputeEntityStateHash(const FPlayerStateSnapsho
 	return Hash;
 }
 
-uint32 UTowerStateSynchronizer::ComputeEntityStateHash(const FMonsterStateSnapshot& Snapshot) const
+int32 UTowerStateSynchronizer::ComputeEntityStateHash(const FMonsterStateSnapshot& Snapshot) const
 {
-	uint32 Hash = GetTypeHash(Snapshot.EntityId);
+	int32 Hash = GetTypeHash(Snapshot.EntityId);
 	Hash = HashCombine(Hash, GetTypeHash(FMath::RoundToInt(Snapshot.Position.X)));
 	Hash = HashCombine(Hash, GetTypeHash(FMath::RoundToInt(Snapshot.Position.Y)));
 	Hash = HashCombine(Hash, GetTypeHash(FMath::RoundToInt(Snapshot.Position.Z)));
@@ -597,9 +597,9 @@ uint32 UTowerStateSynchronizer::ComputeEntityStateHash(const FMonsterStateSnapsh
 	return Hash;
 }
 
-bool UTowerStateSynchronizer::HasEntityStateChanged(int64 EntityId, uint32 NewHash) const
+bool UTowerStateSynchronizer::HasEntityStateChanged(int64 EntityId, int32 NewHash) const
 {
-	const uint32* OldHash = PreviousEntityStateHashes.Find(EntityId);
+	const int32* OldHash = PreviousEntityStateHashes.Find(EntityId);
 	if (!OldHash)
 	{
 		return true; // New entity, always considered changed

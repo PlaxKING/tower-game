@@ -5,17 +5,28 @@ on:
     branches: [main, develop]
     paths:
       - 'procedural-core/**'
+      - 'bevy-server/**'
+      - 'bevy-test-client/**'
+      - 'shared/proto/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
     paths:
       - 'procedural-core/**'
+      - 'bevy-server/**'
+      - 'bevy-test-client/**'
+      - 'shared/proto/**'
+      - '.github/workflows/**'
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # ==========================================================================
+  # Procedural Core (existing)
+  # ==========================================================================
   check:
-    name: Check & Lint
+    name: Check & Lint (procedural-core)
     runs-on: windows-latest
     defaults:
       run:
@@ -36,8 +47,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             procedural-core/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('procedural-core/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-cargo-proccore-${{ hashFiles('procedural-core/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-proccore-
 
       - name: Format check
         run: cargo fmt -- --check
@@ -49,10 +60,9 @@ jobs:
         run: cargo clippy --tests -- -A dead_code
 
   test:
-    name: Test Suite
+    name: Test Suite (procedural-core)
     runs-on: windows-latest
     needs: check
-    # Skip tests if commit message contains [skip tests]
     if: "!contains(github.event.head_commit.message, '[skip tests]')"
     defaults:
       run:
@@ -72,8 +82,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             procedural-core/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('procedural-core/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-cargo-proccore-${{ hashFiles('procedural-core/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-proccore-
 
       - name: Run lib tests
         run: cargo test --lib
@@ -93,7 +103,7 @@ jobs:
   build-release:
     name: Build Release DLL
     runs-on: windows-latest
-    needs: check  # Changed from 'test' - build in parallel with tests for faster DLL
+    needs: check
     defaults:
       run:
         working-directory: procedural-core
@@ -112,8 +122,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             procedural-core/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('procedural-core/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-cargo-proccore-${{ hashFiles('procedural-core/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-proccore-
 
       - name: Build release
         run: cargo build --release
@@ -157,3 +167,191 @@ jobs:
           name: tower_core-release
           path: procedural-core/target/release/tower_core.dll
           retention-days: 30
+
+  # ==========================================================================
+  # Bevy Server (new)
+  # ==========================================================================
+  bevy-server-check:
+    name: Check & Lint (bevy-server)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: bevy-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+          components: clippy, rustfmt
+
+      - name: Install protobuf compiler
+        run: choco install protoc -y
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            bevy-server/target
+          key: ${{ runner.os }}-cargo-bevy-${{ hashFiles('bevy-server/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-bevy-
+
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Clippy (lib)
+        run: cargo clippy --lib -- -D warnings
+
+      - name: Clippy (tests)
+        run: cargo clippy --tests -- -A dead_code
+
+  bevy-server-test:
+    name: Test Suite (bevy-server)
+    runs-on: windows-latest
+    needs: bevy-server-check
+    if: "!contains(github.event.head_commit.message, '[skip tests]')"
+    defaults:
+      run:
+        working-directory: bevy-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install protobuf compiler
+        run: choco install protoc -y
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            bevy-server/target
+          key: ${{ runner.os }}-cargo-bevy-${{ hashFiles('bevy-server/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-bevy-
+
+      - name: Run lib tests (137 tests, no external deps)
+        run: cargo test --lib
+
+      - name: Run E2E integration tests
+        run: cargo test --test e2e_integration_tests
+
+      - name: Run semantic integration tests
+        run: cargo test --test semantic_integration_tests
+
+      - name: Run storage integration tests
+        run: cargo test --test storage_integration_tests
+
+      # API smoke + contract tests require PostgreSQL (run in bevy-server-integration job)
+
+  bevy-server-integration:
+    name: Integration Tests with PostgreSQL (bevy-server)
+    runs-on: ubuntu-latest
+    needs: bevy-server-check
+    if: "!contains(github.event.head_commit.message, '[skip tests]')"
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: localdb
+          POSTGRES_DB: tower_game
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: bevy-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y liblmdb-dev protobuf-compiler
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            bevy-server/target
+          key: ${{ runner.os }}-cargo-bevy-${{ hashFiles('bevy-server/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-bevy-
+
+      - name: Run API smoke tests
+        run: cargo test --test api_smoke_test
+
+      - name: Run UE5 contract tests
+        run: cargo test --test ue5_api_contract_test
+
+  # ==========================================================================
+  # Benchmark Regression Detection
+  # ==========================================================================
+  bevy-server-bench:
+    name: Benchmark (bevy-server)
+    runs-on: ubuntu-latest
+    needs: bevy-server-check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: bevy-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y liblmdb-dev protobuf-compiler
+
+      - name: Cache cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            bevy-server/target
+          key: ${{ runner.os }}-cargo-bevy-bench-${{ hashFiles('bevy-server/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-bevy-bench-
+
+      - name: Run benchmarks
+        run: cargo bench --bench floor_generation -- --output-format bencher | tee bench_output.txt
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: cargo
+          output-file-path: bevy-server/bench_output.txt
+          alert-threshold: '130%'
+          fail-on-alert: true
+          comment-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
+  # ==========================================================================
+  # Docker Build Verification (Linux)
+  # ==========================================================================
+  docker-build:
+    name: Docker Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build bevy-server Docker image
+        run: docker build -f bevy-server/Dockerfile .

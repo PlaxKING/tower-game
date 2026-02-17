@@ -1,0 +1,602 @@
+// Tower Game - Entity Definitions
+// All game entity types for Player, Monster, NPC, Items, Abilities
+syntax = "proto3";
+
+package tower.entities;
+
+import "game_state.proto";
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum Rarity {
+  RARITY_COMMON = 0;
+  RARITY_UNCOMMON = 1;
+  RARITY_RARE = 2;
+  RARITY_EPIC = 3;
+  RARITY_LEGENDARY = 4;
+  RARITY_MYTHIC = 5;
+  RARITY_ANCIENT = 6;
+}
+
+enum DamageType {
+  DAMAGE_TYPE_PHYSICAL = 0;
+  DAMAGE_TYPE_FIRE = 1;
+  DAMAGE_TYPE_ICE = 2;
+  DAMAGE_TYPE_LIGHTNING = 3;
+  DAMAGE_TYPE_POISON = 4;
+  DAMAGE_TYPE_HOLY = 5;
+  DAMAGE_TYPE_DARK = 6;
+  DAMAGE_TYPE_SEMANTIC = 7;
+}
+
+enum ResourceType {
+  RESOURCE_TYPE_HEALTH = 0;
+  RESOURCE_TYPE_KINETIC = 1;
+  RESOURCE_TYPE_THERMAL = 2;
+  RESOURCE_TYPE_SEMANTIC = 3;
+}
+
+enum StatType {
+  STAT_TYPE_DAMAGE = 0;
+  STAT_TYPE_DEFENSE = 1;
+  STAT_TYPE_ATTACK_SPEED = 2;
+  STAT_TYPE_MOVEMENT_SPEED = 3;
+  STAT_TYPE_CRIT_CHANCE = 4;
+  STAT_TYPE_CRIT_DAMAGE = 5;
+  STAT_TYPE_LIFESTEAL = 6;
+  STAT_TYPE_MAX_HEALTH = 7;
+  STAT_TYPE_KINETIC_REGEN = 8;
+  STAT_TYPE_THERMAL_REGEN = 9;
+  STAT_TYPE_SEMANTIC_REGEN = 10;
+}
+
+enum MonsterType {
+  MONSTER_TYPE_NORMAL = 0;
+  MONSTER_TYPE_ELITE = 1;
+  MONSTER_TYPE_RARE = 2;
+  MONSTER_TYPE_MINI_BOSS = 3;
+  MONSTER_TYPE_FLOOR_BOSS = 4;
+  MONSTER_TYPE_WORLD_BOSS = 5;
+}
+
+enum AIBehavior {
+  AI_BEHAVIOR_PASSIVE = 0;
+  AI_BEHAVIOR_DEFENSIVE = 1;
+  AI_BEHAVIOR_AGGRESSIVE = 2;
+  AI_BEHAVIOR_PATROL = 3;
+  AI_BEHAVIOR_BOSS = 4;
+}
+
+enum AIState {
+  AI_STATE_IDLE = 0;
+  AI_STATE_PATROL = 1;
+  AI_STATE_CHASING = 2;
+  AI_STATE_ATTACKING = 3;
+  AI_STATE_FLEEING = 4;
+  AI_STATE_RETURNING = 5;
+  AI_STATE_DEAD = 6;
+}
+
+enum MasteryTier {
+  MASTERY_TIER_NOVICE = 0;
+  MASTERY_TIER_APPRENTICE = 1;
+  MASTERY_TIER_ADEPT = 2;
+  MASTERY_TIER_EXPERT = 3;
+  MASTERY_TIER_MASTER = 4;
+  MASTERY_TIER_GRANDMASTER = 5;
+}
+
+enum ItemType {
+  // Weapons
+  ITEM_TYPE_SWORD = 0;
+  ITEM_TYPE_AXE = 1;
+  ITEM_TYPE_SPEAR = 2;
+  ITEM_TYPE_BOW = 3;
+  ITEM_TYPE_STAFF = 4;
+  ITEM_TYPE_FIST = 5;
+  ITEM_TYPE_DUAL_WIELD = 6;
+  // Armor
+  ITEM_TYPE_HELMET = 10;
+  ITEM_TYPE_CHEST = 11;
+  ITEM_TYPE_GLOVES = 12;
+  ITEM_TYPE_PANTS = 13;
+  ITEM_TYPE_BOOTS = 14;
+  ITEM_TYPE_SHIELD = 15;
+  // Accessories
+  ITEM_TYPE_RING = 20;
+  ITEM_TYPE_AMULET = 21;
+  ITEM_TYPE_EARRING = 22;
+  ITEM_TYPE_BRACELET = 23;
+  // Consumables
+  ITEM_TYPE_POTION = 30;
+  ITEM_TYPE_FOOD = 31;
+  ITEM_TYPE_SCROLL = 32;
+  // Materials
+  ITEM_TYPE_ORE = 40;
+  ITEM_TYPE_HERB = 41;
+  ITEM_TYPE_WOOD = 42;
+  ITEM_TYPE_ESSENCE = 43;
+  ITEM_TYPE_REAGENT = 44;
+  // Special
+  ITEM_TYPE_QUEST_ITEM = 50;
+  ITEM_TYPE_KEY_ITEM = 51;
+  ITEM_TYPE_ARTIFACT = 60;
+  ITEM_TYPE_COSMETIC = 70;
+  ITEM_TYPE_GEM = 80;
+  ITEM_TYPE_RUNE = 81;
+}
+
+enum EquipmentSlot {
+  EQUIPMENT_SLOT_HEAD = 0;
+  EQUIPMENT_SLOT_CHEST = 1;
+  EQUIPMENT_SLOT_HANDS = 2;
+  EQUIPMENT_SLOT_LEGS = 3;
+  EQUIPMENT_SLOT_FEET = 4;
+  EQUIPMENT_SLOT_MAIN_HAND = 5;
+  EQUIPMENT_SLOT_OFF_HAND = 6;
+  EQUIPMENT_SLOT_RING_1 = 7;
+  EQUIPMENT_SLOT_RING_2 = 8;
+  EQUIPMENT_SLOT_AMULET = 9;
+  EQUIPMENT_SLOT_EARRING = 10;
+  EQUIPMENT_SLOT_BRACELET = 11;
+  EQUIPMENT_SLOT_ARTIFACT_1 = 12;
+  EQUIPMENT_SLOT_ARTIFACT_2 = 13;
+  EQUIPMENT_SLOT_ARTIFACT_3 = 14;
+  EQUIPMENT_SLOT_COSMETIC = 15;
+}
+
+enum SocketType {
+  SOCKET_TYPE_RED = 0;       // Strength / damage
+  SOCKET_TYPE_BLUE = 1;      // Intelligence / magic
+  SOCKET_TYPE_YELLOW = 2;    // Dexterity / speed
+  SOCKET_TYPE_GREEN = 3;     // Vitality / defense
+  SOCKET_TYPE_PRISMATIC = 4; // Any
+}
+
+enum EffectTrigger {
+  EFFECT_TRIGGER_ON_HIT = 0;
+  EFFECT_TRIGGER_ON_CRIT = 1;
+  EFFECT_TRIGGER_ON_PARRY = 2;
+  EFFECT_TRIGGER_ON_DODGE = 3;
+  EFFECT_TRIGGER_ON_KILL = 4;
+  EFFECT_TRIGGER_ON_DAMAGED = 5;
+  EFFECT_TRIGGER_ON_LOW_HEALTH = 6;
+  EFFECT_TRIGGER_ON_ABILITY_USE = 7;
+  EFFECT_TRIGGER_PASSIVE = 8;
+  EFFECT_TRIGGER_ON_COMBAT_START = 9;
+  EFFECT_TRIGGER_ON_COMBAT_END = 10;
+}
+
+enum AbilityType {
+  ABILITY_TYPE_ACTIVE = 0;
+  ABILITY_TYPE_PASSIVE = 1;
+  ABILITY_TYPE_TOGGLE = 2;
+  ABILITY_TYPE_CHANNELED = 3;
+}
+
+enum TargetType {
+  TARGET_TYPE_SELF = 0;
+  TARGET_TYPE_SINGLE = 1;
+  TARGET_TYPE_AOE = 2;
+  TARGET_TYPE_CONE = 3;
+  TARGET_TYPE_LINE = 4;
+  TARGET_TYPE_GROUND = 5;
+}
+
+enum BreathPhase {
+  BREATH_PHASE_INHALE = 0;     // 6h - Passive, +20% recovery
+  BREATH_PHASE_HOLD = 1;       // 4h - Swarm, +30% damage, -40% recovery
+  BREATH_PHASE_EXHALE = 2;     // 6h - Aggressive, -30% recovery
+  BREATH_PHASE_PAUSE = 3;      // 2h - Portals to hidden floors
+}
+
+// ============================================================================
+// Player Entities
+// ============================================================================
+
+// Full player profile (stored in PostgreSQL)
+message PlayerProfile {
+  uint64 id = 1;
+  string username = 2;
+  int64 created_at = 3;              // Unix timestamp
+  int64 last_login = 4;
+  uint64 playtime_seconds = 5;
+
+  // Base stats (set ONCE at character creation, immutable)
+  uint32 base_str = 10;              // 1-10, total = 20
+  uint32 base_dex = 11;
+  uint32 base_int = 12;
+  uint32 base_vit = 13;
+  uint32 base_luk = 14;
+
+  // Current state
+  float health = 20;
+  float max_health = 21;
+  float kinetic_energy = 22;
+  float thermal_energy = 23;
+  float semantic_energy = 24;
+
+  // Position
+  uint32 floor_id = 30;
+  tower.game.Vec3 position = 31;
+  tower.game.Rotation rotation = 32;
+
+  // State flags
+  bool is_alive = 40;
+  bool is_in_combat = 41;
+  bool is_trading = 42;
+  uint32 respawn_floor = 43;
+
+  // References
+  repeated MasteryProgress mastery = 50;
+  repeated InventorySlot inventory = 51;
+  PlayerAbilities abilities = 52;
+  Wallet wallet = 53;
+}
+
+// Mastery progress for one domain
+message MasteryProgress {
+  string domain = 1;                 // "SwordMastery", etc.
+  uint64 experience = 2;
+  MasteryTier tier = 3;
+  string specialization = 4;         // Specialization branch (if Expert+)
+}
+
+// Inventory slot (bag or equipped)
+message InventorySlot {
+  uint64 slot_id = 1;
+  string item_template_id = 2;       // References ItemTemplate in LMDB
+  uint32 quantity = 3;
+  uint32 slot_type = 4;              // 0=Bag, 1=Equipment, 2=Bank
+  uint32 slot_index = 5;
+
+  // Instance data (for unique/non-stackable items)
+  ItemInstance instance = 10;
+}
+
+// Unique item instance (rolls, sockets, durability)
+message ItemInstance {
+  uint64 instance_id = 1;
+  float durability = 2;              // 0.0-1.0 (100%)
+  repeated SocketSlot sockets = 3;
+  repeated ItemEffect rolled_effects = 4; // Random bonus rolls
+  uint32 enhancement_level = 5;      // +0 to +15
+}
+
+// Socket with optional inserted gem/rune
+message SocketSlot {
+  SocketType socket_type = 1;
+  string gem_id = 2;                 // Empty string = empty socket
+}
+
+// Player unlocked/equipped abilities
+message PlayerAbilities {
+  repeated string unlocked = 1;      // All unlocked ability IDs
+  repeated string hotbar = 2;        // 10 slots (empty string = empty)
+  repeated string passive = 3;       // Auto-active passive abilities
+}
+
+// Player wallet
+message Wallet {
+  uint64 gold = 1;
+  uint32 premium_currency = 2;
+  uint32 honor_points = 3;
+  map<string, uint32> event_tokens = 4; // Season/event currency
+}
+
+// ============================================================================
+// Monster Entities
+// ============================================================================
+
+// Monster template (static definition, stored in LMDB)
+message MonsterTemplate {
+  string id = 1;                     // "goblin_scout"
+  string name = 2;                   // "Goblin Scout"
+  MonsterType monster_type = 3;
+  uint32 tier = 4;                   // 1-10 difficulty
+
+  // Base stats (scaled by floor)
+  float base_health = 10;
+  float base_damage = 11;
+  float base_defense = 12;
+  float base_speed = 13;
+
+  // AI
+  AIBehavior ai_behavior = 20;
+  float aggro_range = 21;
+  float leash_range = 22;
+
+  // Combat
+  repeated string ability_ids = 30;
+  string attack_pattern = 31;        // "melee", "ranged", "mixed"
+
+  // Semantic
+  tower.game.SemanticTags semantic_tags = 40;
+
+  // Loot
+  string loot_table_id = 50;
+  uint32 gold_min = 51;
+  uint32 gold_max = 52;
+
+  // Visuals
+  string model_id = 60;
+  float scale = 61;
+}
+
+// Monster active instance (runtime, ephemeral)
+message MonsterInstance {
+  uint64 instance_id = 1;
+  string template_id = 2;
+  uint32 floor_id = 3;
+
+  // State
+  tower.game.Vec3 position = 10;
+  tower.game.Rotation rotation = 11;
+  tower.game.Velocity velocity = 12;
+  float health = 13;
+  float max_health = 14;
+
+  // Combat
+  uint64 target_player = 20;
+  bool is_in_combat = 21;
+  uint64 last_damaged_by = 22;
+
+  // AI
+  AIState ai_state = 30;
+  tower.game.Vec3 spawn_position = 31;
+
+  // Modifiers
+  repeated BuffInstance buffs = 40;
+  repeated BuffInstance debuffs = 41;
+
+  // Semantic (floor 70% + template 30%)
+  tower.game.SemanticTags semantic_tags = 50;
+}
+
+// Active buff/debuff on an entity
+message BuffInstance {
+  string buff_id = 1;
+  float remaining_ms = 2;
+  float value = 3;                   // Effect magnitude
+  uint64 source_player = 4;         // Who applied it
+  uint32 stacks = 5;
+}
+
+// ============================================================================
+// Item Templates
+// ============================================================================
+
+// Item template (static definition, stored in LMDB)
+message ItemTemplate {
+  string id = 1;                     // "iron_sword"
+  string name = 2;
+  string description = 3;
+  ItemType item_type = 4;
+  Rarity rarity = 5;
+  uint32 tier = 6;                   // 1-10
+
+  // Requirements
+  string required_mastery_domain = 10; // "" = no requirement
+  MasteryTier required_mastery_tier = 11;
+
+  // Stats (MINIMAL - Tower Game focuses on effects)
+  float base_damage = 20;
+  float base_defense = 21;
+  float base_speed = 22;             // Attack speed multiplier
+
+  // Effects (CORE - trigger→action)
+  repeated ItemEffect effects = 30;
+
+  // Sockets
+  uint32 socket_count = 40;
+  repeated SocketType socket_types = 41;
+
+  // Set bonus
+  string set_id = 50;               // "" = no set
+
+  // Semantic
+  tower.game.SemanticTags semantic_tags = 60;
+
+  // Economy
+  uint32 vendor_value = 70;
+  uint32 max_stack = 71;
+
+  // Crafting
+  bool is_craftable = 80;
+  string recipe_id = 81;
+
+  // Visuals
+  string icon_id = 90;
+  string model_id = 91;
+}
+
+// Item effect (trigger→action system)
+message ItemEffect {
+  EffectTrigger trigger = 1;
+  string trigger_param = 2;         // For ON_LOW_HEALTH: "0.3", ON_ABILITY_USE: ability_id
+  EffectAction action = 3;
+  float chance = 4;                  // 0.0-1.0
+  uint32 cooldown_ms = 5;
+}
+
+// Effect action (what happens when triggered)
+message EffectAction {
+  oneof action {
+    DealDamageAction deal_damage = 1;
+    HealAction heal = 2;
+    ApplyBuffAction apply_buff = 3;
+    RestoreResourceAction restore_resource = 4;
+    IncreaseStatAction increase_stat = 5;
+    LifestealAction lifesteal = 6;
+    ShieldAction shield = 7;
+    TeleportAction teleport = 8;
+    SummonAction summon = 9;
+  }
+}
+
+message DealDamageAction {
+  DamageType damage_type = 1;
+  float amount = 2;
+  bool is_percent = 3;              // % of base damage or flat
+}
+
+message HealAction {
+  float amount = 1;
+  bool is_percent = 2;
+}
+
+message ApplyBuffAction {
+  string buff_id = 1;
+  uint32 duration_ms = 2;
+  float value = 3;
+}
+
+message RestoreResourceAction {
+  ResourceType resource = 1;
+  float amount = 2;
+}
+
+message IncreaseStatAction {
+  StatType stat = 1;
+  float amount = 2;
+  uint32 duration_ms = 3;          // 0 = permanent (while equipped)
+}
+
+message LifestealAction {
+  float percent = 1;
+}
+
+message ShieldAction {
+  float amount = 1;
+  uint32 duration_ms = 2;
+}
+
+message TeleportAction {
+  float distance = 1;
+  string direction = 2;            // "forward", "backward", "random"
+}
+
+message SummonAction {
+  string creature_id = 1;
+  uint32 duration_ms = 2;
+}
+
+// Item set definition
+message ItemSet {
+  string id = 1;
+  string name = 2;
+  repeated string item_ids = 3;     // Items in this set
+  repeated SetBonus bonuses = 4;
+}
+
+message SetBonus {
+  uint32 pieces_required = 1;
+  repeated ItemEffect effects = 2;
+  string description = 3;
+}
+
+// Gem/rune template
+message GemTemplate {
+  string id = 1;
+  string name = 2;
+  uint32 tier = 3;                  // 1-5
+  SocketType socket_type = 4;
+  ItemEffect bonus = 5;
+}
+
+// Loot table definition
+message LootTable {
+  string id = 1;
+  repeated LootEntry entries = 2;
+}
+
+message LootEntry {
+  string item_template_id = 1;
+  float drop_chance = 2;           // 0.0-1.0
+  uint32 min_quantity = 3;
+  uint32 max_quantity = 4;
+  Rarity min_rarity = 5;           // For rarity roll
+  float semantic_bonus = 6;        // Extra chance from semantic similarity
+}
+
+// ============================================================================
+// Ability Templates
+// ============================================================================
+
+message AbilityTemplate {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  AbilityType ability_type = 4;
+
+  // Requirements
+  string required_mastery_domain = 10;
+  MasteryTier required_mastery_tier = 11;
+  ItemType required_weapon = 12;
+
+  // Resource costs
+  float kinetic_cost = 20;
+  float thermal_cost = 21;
+  float semantic_cost = 22;
+
+  // Timing
+  uint32 cooldown_ms = 30;
+  uint32 cast_time_ms = 31;
+  uint32 global_cooldown_ms = 32;
+  uint32 max_charges = 33;
+  uint32 charge_recharge_ms = 34;
+
+  // Effects
+  repeated AbilityEffect effects = 40;
+
+  // Targeting
+  TargetType target_type = 50;
+  float range = 51;
+  float aoe_radius = 52;
+
+  // Semantic
+  tower.game.SemanticTags semantic_tags = 60;
+
+  // Visuals
+  string animation_id = 70;
+  string vfx_id = 71;
+  string sfx_id = 72;
+}
+
+message AbilityEffect {
+  string effect_type = 1;          // "damage:fire", "heal", "buff:speed"
+  float value = 2;
+  uint32 duration_ms = 3;
+  StatType scaling_stat = 4;
+  float scaling_ratio = 5;
+}
+
+// ============================================================================
+// World/Floor Extensions
+// ============================================================================
+
+message FloorModifiers {
+  uint32 floor_id = 1;
+  BreathPhase breath_phase = 2;
+  float corruption_level = 3;
+  uint32 danger_level = 4;          // 1-10
+  repeated FloorEvent active_events = 5;
+}
+
+message FloorEvent {
+  string event_type = 1;           // "treasure", "boss_rush", "horde", "merchant"
+  int64 start_time = 2;
+  int64 end_time = 3;
+  map<string, string> params = 4;
+}
+
+// Monster spawn point definition
+message SpawnPoint {
+  tower.game.Vec3 position = 1;
+  string monster_template_id = 2;
+  uint32 respawn_time_ms = 3;
+  float spawn_radius = 4;
+  uint32 max_count = 5;
+}

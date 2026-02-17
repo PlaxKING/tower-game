@@ -2,102 +2,141 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Rust: Build (Debug)",
+      "label": "Server: Build (Debug)",
       "type": "shell",
       "command": "cargo",
-      "args": ["build", "--manifest-path", "procedural-core/Cargo.toml"],
+      "args": ["build", "--manifest-path", "bevy-server/Cargo.toml"],
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": ["$rustc"],
       "presentation": { "reveal": "always", "panel": "shared", "clear": true }
     },
     {
-      "label": "Rust: Build (Release)",
+      "label": "Server: Build (Release)",
       "type": "shell",
       "command": "cargo",
-      "args": ["build", "--release", "--manifest-path", "procedural-core/Cargo.toml"],
+      "args": ["build", "--release", "--manifest-path", "bevy-server/Cargo.toml"],
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Rust: Build DLL (cdylib)",
+      "label": "Server: Build DLL (cdylib)",
       "type": "shell",
       "command": "cargo",
-      "args": ["build", "--release", "--lib", "--manifest-path", "procedural-core/Cargo.toml"],
+      "args": ["build", "--release", "--lib", "--manifest-path", "bevy-server/Cargo.toml"],
       "problemMatcher": ["$rustc"],
       "detail": "Build tower_core.dll for UE5 FFI bridge"
     },
     {
-      "label": "Rust: Run Bevy",
+      "label": "Server: Run",
       "type": "shell",
       "command": "cargo",
-      "args": ["run", "--manifest-path", "procedural-core/Cargo.toml"],
-      "presentation": { "reveal": "always", "panel": "new", "focus": true, "clear": true },
+      "args": ["run", "--release", "--manifest-path", "bevy-server/Cargo.toml", "--bin", "tower-bevy-server"],
+      "options": {
+        "env": {
+          "DATABASE_URL": "postgres://postgres:localdb@localhost:5433/tower_game",
+          "RUST_LOG": "info"
+        }
+      },
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true, "clear": true },
       "problemMatcher": []
     },
     {
-      "label": "Rust: Test All",
+      "label": "Server: Test All",
       "type": "shell",
       "command": "cargo",
-      "args": ["test", "--manifest-path", "procedural-core/Cargo.toml"],
+      "args": ["test", "--manifest-path", "bevy-server/Cargo.toml"],
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Rust: Test (verbose)",
+      "label": "Server: Test (verbose)",
       "type": "shell",
       "command": "cargo",
-      "args": ["test", "--manifest-path", "procedural-core/Cargo.toml", "--", "--nocapture"],
+      "args": ["test", "--manifest-path", "bevy-server/Cargo.toml", "--", "--nocapture"],
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Rust: Clippy",
+      "label": "Server: Clippy",
       "type": "shell",
       "command": "cargo",
-      "args": ["clippy", "--manifest-path", "procedural-core/Cargo.toml", "--", "-W", "clippy::all"],
+      "args": ["clippy", "--manifest-path", "bevy-server/Cargo.toml", "--", "-W", "clippy::all"],
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Rust: Bench",
+      "label": "Server: Bench",
       "type": "shell",
       "command": "cargo",
-      "args": ["bench", "--manifest-path", "procedural-core/Cargo.toml"],
+      "args": ["bench", "--manifest-path", "bevy-server/Cargo.toml"],
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Nakama: Start",
+      "label": "Client: Run Test Client",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["up", "-d", "nakama", "postgres"],
+      "command": "cargo",
+      "args": ["run", "--release", "--manifest-path", "bevy-test-client/Cargo.toml", "--bin", "bevy-test-client"],
+      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true },
       "problemMatcher": []
     },
     {
-      "label": "Nakama: Stop",
+      "label": "Client: Stress Test (10 clients)",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["down"],
+      "command": "cargo",
+      "args": ["run", "--release", "--manifest-path", "bevy-test-client/Cargo.toml", "--bin", "stress_test", "--", "--clients", "10", "--duration", "60"],
+      "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
     },
     {
-      "label": "Nakama: Logs",
+      "label": "Docker: Start PostgreSQL",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["logs", "-f", "nakama"],
+      "command": "docker",
+      "args": ["compose", "up", "-d", "postgres"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start Nakama",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "up", "-d", "nakama"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Start All",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "up", "-d"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Stop All",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "down"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Build Bevy Server",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "up", "-d", "--build", "bevy-server"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: Logs (Bevy Server)",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "logs", "-f", "bevy-server"],
       "isBackground": true,
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
-      "label": "Docker: Up All",
+      "label": "Docker: Logs (Nakama)",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["up", "-d"],
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Down All",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": ["down"],
-      "problemMatcher": []
+      "command": "docker",
+      "args": ["compose", "logs", "-f", "nakama"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
       "label": "Blender: Export All Assets",
@@ -116,11 +155,17 @@
       "detail": "Check all models for UE5 compatibility (scale, normals, UVs)"
     },
     {
-      "label": "Full Build: Test + DLL",
+      "label": "Full: Test + Build + DLL",
       "dependsOrder": "sequence",
-      "dependsOn": ["Rust: Test All", "Rust: Build DLL (cdylib)"],
+      "dependsOn": ["Server: Test All", "Server: Build (Release)", "Server: Build DLL (cdylib)"],
       "problemMatcher": [],
       "group": "build"
+    },
+    {
+      "label": "Full: Docker Up + Run Server",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Docker: Start PostgreSQL", "Server: Run"],
+      "problemMatcher": []
     }
   ]
 }

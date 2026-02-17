@@ -270,12 +270,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
  * Manages the connection between UE5 and the Rust procedural core over
  * a JSON-over-HTTP transport that mirrors the proto service definitions.
  *
- * Service endpoints (maps to gRPC service names):
- *   /tower.GenerationService/GenerateFloor
- *   /tower.CombatService/CalculateDamage
- *   /tower.MasteryService/TrackProgress
- *   /tower.EconomyService/GetWallet
- *   /tower.GenerationService/GenerateLoot
+ * Service endpoints (27 POST + 3 GET = 30 total):
+ *   GenerationService:  GenerateFloor, GenerateLoot, SpawnMonsters, GenerateMonsters, GenerateDestructibles, QuerySemanticTags
+ *   GameStateService:   GetState, GetWorldCycle, GetPlayerProfile, GetLiveStatus, GetLivePlayer
+ *   CombatService:      CalculateDamage, GetCombatState, ProcessAction
+ *   MasteryService:     TrackProgress, GetMasteryProfile, ChooseSpecialization, UpdateAbilityLoadout
+ *   EconomyService:     GetWallet, Craft, ListAuction, BuyAuction, Trade
+ *   DestructionService: ApplyDamage, GetFloorState, Rebuild, GetTemplates
+ *   System:             GET /health, GET /metrics, GET /metrics/json
  *
  * Falls back to FFI/DLL bridge (tower_core.dll) when the gRPC server
  * is unreachable and the TransportMode allows it.
@@ -367,6 +369,146 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "gRPC|Economy")
 	int64 RequestLoot(int64 SourceEntityId, int64 PlayerId, float LuckModifier);
 
+	// ============ GameStateService ============
+
+	/**
+	 * Get the current Breath of the Tower world cycle.
+	 * Maps to: tower.GameStateService/GetWorldCycle
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|GameState")
+	int64 RequestWorldCycle(int64 TowerSeed);
+
+	/**
+	 * Get live server status from ECS snapshot.
+	 * Maps to: tower.GameStateService/GetLiveStatus
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|GameState")
+	int64 RequestLiveStatus();
+
+	/**
+	 * Get combined player + world state.
+	 * Maps to: tower.GameStateService/GetState
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|GameState")
+	int64 RequestGameState(int64 PlayerId, int32 FloorId);
+
+	/**
+	 * Get a player's full profile with base stats.
+	 * Maps to: tower.GameStateService/GetPlayerProfile
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|GameState")
+	int64 RequestPlayerProfile(int64 PlayerId);
+
+	// ============ Additional Generation ============
+
+	/**
+	 * Spawn monsters in a room.
+	 * Maps to: tower.GenerationService/SpawnMonsters
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Generation")
+	int64 RequestSpawnMonsters(int64 TowerSeed, int32 FloorId, int32 RoomId);
+
+	/**
+	 * Generate destructible objects for a floor.
+	 * Maps to: tower.GenerationService/GenerateDestructibles
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Generation")
+	int64 RequestGenerateDestructibles(int64 TowerSeed, int32 FloorId);
+
+	/**
+	 * Generate grammar-based monsters with full blueprints.
+	 * Maps to: tower.GenerationService/GenerateMonsters
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Generation")
+	int64 RequestGenerateMonsters(int64 TowerSeed, int32 FloorId, int32 RoomId, int32 Count);
+
+	// ============ Additional Combat ============
+
+	/**
+	 * Get entity combat state from ECS.
+	 * Maps to: tower.CombatService/GetCombatState
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Combat")
+	int64 RequestCombatState(int64 EntityId);
+
+	/**
+	 * Process a combat action through ECS bridge.
+	 * Maps to: tower.CombatService/ProcessAction
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Combat")
+	int64 RequestProcessAction(int64 PlayerId, const FString& ActionType, int64 TargetId, const FString& AbilityId, FVector Position, float Facing);
+
+	// ============ Additional Mastery ============
+
+	/**
+	 * Get all mastery domains for a player.
+	 * Maps to: tower.MasteryService/GetMasteryProfile
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Mastery")
+	int64 RequestMasteryProfile(int64 PlayerId);
+
+	/**
+	 * Choose specialization branch for a domain.
+	 * Maps to: tower.MasteryService/ChooseSpecialization
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Mastery")
+	int64 RequestChooseSpecialization(int64 PlayerId, const FString& Domain, const FString& BranchId);
+
+	// ============ Additional Economy ============
+
+	/**
+	 * Craft an item from a recipe.
+	 * Maps to: tower.EconomyService/Craft
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Economy")
+	int64 RequestCraft(int64 PlayerId, const FString& RecipeId, const TArray<FString>& MaterialItemIds);
+
+	/**
+	 * List active auction house entries.
+	 * Maps to: tower.EconomyService/ListAuction
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Economy")
+	int64 RequestListAuctions(const FString& Category, int32 Page, int32 PerPage);
+
+	/**
+	 * Buy an auction listing.
+	 * Maps to: tower.EconomyService/BuyAuction
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Economy")
+	int64 RequestBuyAuction(int64 PlayerId, int64 AuctionId);
+
+	// ============ DestructionService ============
+
+	/**
+	 * Apply destruction damage to an environmental object.
+	 * Maps to: tower.DestructionService/ApplyDamage
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Destruction")
+	int64 RequestApplyDestructionDamage(int64 PlayerId, int64 TargetEntityId, int32 FloorId,
+		FVector ImpactPoint, FVector EntityPosition, float Damage, float Radius,
+		const FString& DamageType, const FString& WeaponId, const FString& AbilityId);
+
+	/**
+	 * Get destruction state for a floor.
+	 * Maps to: tower.DestructionService/GetFloorState
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Destruction")
+	int64 RequestFloorDestructionState(int32 FloorId);
+
+	/**
+	 * Rebuild a destroyed object.
+	 * Maps to: tower.DestructionService/Rebuild
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Destruction")
+	int64 RequestRebuild(int64 PlayerId, int64 TargetEntityId, int32 FloorId, const TArray<FString>& MaterialItems);
+
+	/**
+	 * Get all destructible templates.
+	 * Maps to: tower.DestructionService/GetTemplates
+	 */
+	UFUNCTION(BlueprintCallable, Category = "gRPC|Destruction")
+	int64 RequestDestructionTemplates();
+
 	// ============ Delegates ============
 
 	UPROPERTY(BlueprintAssignable, Category = "gRPC|Events")
@@ -433,8 +575,8 @@ private:
 
 	// FFI function pointer types
 	typedef int32 (*FFIHealthCheckFn)();
-	typedef const char* (*FFIGenerateFloorFn)(uint64, uint32);
-	typedef const char* (*FFICalculateDamageFn)(uint64, uint64, const char*, const char*);
+	typedef const char* (*FFIGenerateFloorFn)(int64, int32);
+	typedef const char* (*FFICalculateDamageFn)(int64, int64, const char*, const char*);
 	typedef void (*FFIFreeStringFn)(const char*);
 
 	FFIHealthCheckFn FFIHealthCheck = nullptr;

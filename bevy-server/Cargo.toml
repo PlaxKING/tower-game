@@ -1,0 +1,83 @@
+[package]
+name = "tower-bevy-server"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib", "cdylib"]  # Build both static lib and DLL for UE5 FFI
+
+[dependencies]
+# Bevy core (headless - no rendering) - Updated to 0.15.3
+bevy = { version = "0.15.3", default-features = false, features = [
+    "bevy_state",
+    "bevy_asset",
+    "multi_threaded",
+] }
+
+# Add tracing for logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Networking - Compatible versions for Bevy 0.15.3
+bevy_replicon = "0.30"
+bevy_replicon_renet = "0.7"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"  # For FFI JSON conversion
+bincode = "1.3"
+prost = "0.13"
+prost-types = "0.13"
+
+# Physics (server-side hitbox validation)
+bevy_rapier3d = { version = "0.28", features = ["simd-stable"] }
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+sha3 = "0.10"
+
+# Async runtime and caching
+tokio = { version = "1.41", features = ["rt-multi-thread", "sync", "time", "macros", "signal"] }
+lru = "0.12"
+parking_lot = "0.12"
+heed = "0.20"  # LMDB wrapper (embedded database)
+
+# PostgreSQL (async, compile-time checked)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "json"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async traits for repository pattern
+async-trait = "0.1"
+
+# HTTP API (JSON-over-HTTP endpoints for UE5 client)
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Shared code from procedural-core (commented out until created)
+# tower-procedural-core = { path = "../procedural-core" }
+
+[build-dependencies]
+prost-build = "0.13"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.dev]
+opt-level = 1
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["async_tokio"] }
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http = "1"
+
+[[bench]]
+name = "floor_generation"
+harness = false
+
+[[bench]]
+name = "cache_comparison_benchmarks"
+harness = false

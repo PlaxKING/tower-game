@@ -1,0 +1,190 @@
+// Tower Game - Social Systems
+syntax = "proto3";
+
+package tower.social;
+
+// ============================================================================
+// Guild System
+// ============================================================================
+
+enum GuildRank {
+  GUILD_RANK_RECRUIT = 0;
+  GUILD_RANK_MEMBER = 1;
+  GUILD_RANK_VETERAN = 2;
+  GUILD_RANK_OFFICER = 3;
+  GUILD_RANK_LEADER = 4;
+}
+
+message Guild {
+  uint64 id = 1;
+  string name = 2;                  // Unique guild name
+  string tag = 3;                   // 3-5 char tag [TAG]
+  uint64 leader_id = 4;
+  int64 created_at = 5;
+
+  uint32 level = 10;               // 1-10
+  uint64 experience = 11;
+  uint32 max_members = 12;         // Scales with level (20-100)
+
+  string description = 20;
+  bool is_recruiting = 21;
+  string motd = 22;                // Message of the day
+
+  // Guild bank
+  uint64 bank_gold = 30;
+  repeated GuildBankSlot bank_items = 31;
+
+  // Stats
+  uint32 member_count = 40;
+  uint64 total_contribution = 41;
+}
+
+message GuildMember {
+  uint64 guild_id = 1;
+  uint64 player_id = 2;
+  GuildRank rank = 3;
+  int64 joined_at = 4;
+  uint64 contribution_points = 5;
+  int64 last_active = 6;
+  string note = 7;                 // Officer note
+}
+
+message GuildBankSlot {
+  uint32 tab = 1;                  // Bank tab (0-4)
+  uint32 slot = 2;                 // Slot index (0-99)
+  string item_template_id = 3;
+  uint32 quantity = 4;
+  uint64 item_instance_id = 5;
+}
+
+// ============================================================================
+// Friends & Social
+// ============================================================================
+
+enum FriendshipStatus {
+  FRIENDSHIP_STATUS_PENDING = 0;
+  FRIENDSHIP_STATUS_ACCEPTED = 1;
+  FRIENDSHIP_STATUS_BLOCKED = 2;
+}
+
+message Friendship {
+  uint64 player_id = 1;
+  uint64 friend_id = 2;
+  FriendshipStatus status = 3;
+  int64 created_at = 4;
+  string note = 5;                 // Player-set note
+}
+
+// ============================================================================
+// Party System
+// ============================================================================
+
+enum LootMode {
+  LOOT_MODE_FREE_FOR_ALL = 0;
+  LOOT_MODE_ROUND_ROBIN = 1;
+  LOOT_MODE_MASTER_LOOTER = 2;
+  LOOT_MODE_NEED_GREED = 3;
+}
+
+enum PartyRole {
+  PARTY_ROLE_NONE = 0;
+  PARTY_ROLE_TANK = 1;
+  PARTY_ROLE_HEALER = 2;
+  PARTY_ROLE_DPS = 3;
+  PARTY_ROLE_SUPPORT = 4;
+}
+
+message Party {
+  uint64 id = 1;
+  uint64 leader_id = 2;
+  repeated PartyMember members = 3;
+  uint32 max_size = 4;             // 4-8
+  LootMode loot_mode = 5;
+  int64 created_at = 6;
+}
+
+message PartyMember {
+  uint64 player_id = 1;
+  PartyRole role = 2;
+  bool is_ready = 3;
+}
+
+// ============================================================================
+// Chat System
+// ============================================================================
+
+enum ChatChannel {
+  CHAT_CHANNEL_GLOBAL = 0;
+  CHAT_CHANNEL_ZONE = 1;
+  CHAT_CHANNEL_PARTY = 2;
+  CHAT_CHANNEL_GUILD = 3;
+  CHAT_CHANNEL_WHISPER = 4;
+  CHAT_CHANNEL_TRADE = 5;
+  CHAT_CHANNEL_SYSTEM = 6;
+}
+
+message ChatMessage {
+  uint64 id = 1;
+  uint64 sender_id = 2;
+  string sender_name = 3;
+  ChatChannel channel = 4;
+  uint64 target_id = 5;            // For whisper or guild
+  string content = 6;
+  int64 timestamp = 7;
+}
+
+// ============================================================================
+// Mail System
+// ============================================================================
+
+enum MailStatus {
+  MAIL_STATUS_UNREAD = 0;
+  MAIL_STATUS_READ = 1;
+  MAIL_STATUS_CLAIMED = 2;               // Attachments claimed
+  MAIL_STATUS_EXPIRED = 3;
+}
+
+message Mail {
+  uint64 id = 1;
+  uint64 sender_id = 2;
+  string sender_name = 3;
+  uint64 recipient_id = 4;
+
+  string subject = 10;
+  string body = 11;
+
+  // Attachments
+  uint64 gold_attached = 20;
+  repeated MailAttachment items = 21;
+
+  MailStatus status = 30;
+  int64 sent_at = 31;
+  int64 expires_at = 32;
+}
+
+message MailAttachment {
+  string item_template_id = 1;
+  uint32 quantity = 2;
+  uint64 item_instance_id = 3;
+}
+
+// ============================================================================
+// Leaderboard
+// ============================================================================
+
+enum LeaderboardType {
+  LEADERBOARD_TYPE_FLOOR_PROGRESS = 0;   // Highest floor reached
+  LEADERBOARD_TYPE_MASTERY_TOTAL = 1;    // Total mastery XP
+  LEADERBOARD_TYPE_PVP_RATING = 2;       // Shadow duel rating
+  LEADERBOARD_TYPE_WEALTH = 3;           // Gold accumulated
+  LEADERBOARD_TYPE_BUILD_ENTROPY = 4;    // Build uniqueness (>0.7 target)
+  LEADERBOARD_TYPE_GUILD_POWER = 5;      // Guild total mastery
+}
+
+message LeaderboardEntry {
+  uint32 rank = 1;
+  uint64 player_id = 2;
+  string player_name = 3;
+  uint64 score = 4;
+  string extra_data = 5;           // JSON for context
+}

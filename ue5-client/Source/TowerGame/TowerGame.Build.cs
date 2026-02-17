@@ -19,10 +19,15 @@ public class TowerGame : ModuleRules
             "UMG",
             "NetCore",
             "HTTP",
+            "Sockets",          // UDP socket support
+            "Networking",       // Network utilities
             "Slate",
             "SlateCore",
             "WebSockets",
-            "NavigationSystem"
+            "NavigationSystem",
+            "GeometryCollectionEngine",  // Chaos Destruction system
+            "FieldSystemEngine",         // Field system for destruction forces
+            "ChaosSolverEngine"          // Chaos physics solver
         });
 
         PrivateDependencyModuleNames.AddRange(new string[] {
@@ -82,5 +87,38 @@ public class TowerGame : ModuleRules
 
         // Add as runtime dependency so it gets packaged
         RuntimeDependencies.Add(TargetDllPath);
+
+        // ============================================================================
+        // Tower Bevy Server DLL (FFI Integration for Protobuf)
+        // ============================================================================
+
+        string BevyThirdParty = Path.Combine(ModuleDirectory, "../../ThirdParty/TowerBevy");
+        string BevyInclude = Path.Combine(BevyThirdParty, "include");
+        string BevyLib = Path.Combine(BevyThirdParty, "lib");
+        string BevyDllPath = Path.Combine(BevyLib, "tower_bevy_server.dll");
+
+        // Add include path for FFI header
+        PublicIncludePaths.Add(BevyInclude);
+
+        // Link with DLL (delay-load for graceful fallback)
+        if (File.Exists(BevyDllPath))
+        {
+            PublicDelayLoadDLLs.Add("tower_bevy_server.dll");
+            RuntimeDependencies.Add(BevyDllPath);
+        }
+
+        // ============================================================================
+        // NOTE: Using Rust FFI for Protobuf instead of libprotobuf.lib
+        // ============================================================================
+        // tower_bevy_server.dll provides C FFI functions:
+        //   - protobuf_to_json()  (Protobuf binary → JSON string)
+        //   - free_string()       (Free Rust-allocated strings)
+        //   - get_chunk_field()   (Extract specific fields)
+        //
+        // Advantages:
+        //   - No need for libprotobuf.lib in UE5
+        //   - Rust handles all Protobuf parsing (prost crate)
+        //   - Simpler build process
+        //   - 2.5MB DLL includes everything needed
     }
 }

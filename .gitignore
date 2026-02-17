@@ -1,15 +1,19 @@
 # === Rust ===
 procedural-core/target/
+bevy-server/target/
+bevy-test-client/target/
 **/*.rs.bk
 *.pdb
 
 # === Unreal Engine 5 ===
-unreal-client/Binaries/
-unreal-client/DerivedDataCache/
-unreal-client/Intermediate/
-unreal-client/Saved/
-unreal-client/Build/
-unreal-client/.vs/
+ue5-client/Binaries/
+ue5-client/DerivedDataCache/
+ue5-client/Intermediate/
+ue5-client/Saved/
+ue5-client/Build/
+ue5-client/.vs/
+ue5-client/Plugins/*/Binaries/
+ue5-client/ThirdParty/
 *.sln
 *.suo
 *.opensdf
@@ -31,6 +35,7 @@ venv/
 
 # === Docker ===
 docker-data/
+data/
 
 # === IDE ===
 .idea/
@@ -55,6 +60,7 @@ dist/
 build/
 *.exe
 *.dll
+*.dll.lib
 *.so
 *.dylib
 
@@ -62,14 +68,16 @@ build/
 *.log
 logs/
 
-# === Temporary analysis files ===
+# === Tools (local binaries) ===
+.tools/
+
+# === Temporary/local files ===
 dll_exports.txt
 dll_objdump.txt
 exports.txt
 dopopensource.txt
+benchmark_results.txt
+nakama-server/modules_backup/
 
-# === Project Documentation (личные заметки и отчёты) ===
+# === Personal notes ===
 project info by plax/
-docs/                # Рабочие отчёты и документация
-*.md                 # Все markdown файлы игнорируются
-*.txt                # Все текстовые файлы игнорируются

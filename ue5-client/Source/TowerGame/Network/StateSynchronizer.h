@@ -404,7 +404,7 @@ private:
 	 * Key: EntityId, Value: last synced position hash.
 	 * Used to skip re-processing entities whose state has not changed.
 	 */
-	TMap<int64, uint32> PreviousEntityStateHashes;
+	TMap<int64, int32> PreviousEntityStateHashes;
 
 	// ============ Internal Methods ============
 
@@ -433,11 +433,11 @@ private:
 	FVector ReplayPendingActions(FVector ServerPosition) const;
 
 	/** Compute a simple hash of an entity's mutable state for delta detection */
-	uint32 ComputeEntityStateHash(const FPlayerStateSnapshot& Snapshot) const;
-	uint32 ComputeEntityStateHash(const FMonsterStateSnapshot& Snapshot) const;
+	int32 ComputeEntityStateHash(const FPlayerStateSnapshot& Snapshot) const;
+	int32 ComputeEntityStateHash(const FMonsterStateSnapshot& Snapshot) const;
 
 	/** Check if an entity's state has changed since the last sync */
-	bool HasEntityStateChanged(int64 EntityId, uint32 NewHash) const;
+	bool HasEntityStateChanged(int64 EntityId, int32 NewHash) const;
 
 	/** Parse incoming JSON state data from the match connection */
 	bool ParseWorldStateFromJson(const FString& JsonString, FWorldStateBuffer& OutState) const;

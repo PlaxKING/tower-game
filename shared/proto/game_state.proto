@@ -1,342 +1,289 @@
+// Tower Game - Core Game State Protocol
+// Single source of truth for Rust ↔ UE5 communication
 syntax = "proto3";
 
-package tower;
+package tower.game;
 
-// === Core Types ===
+// ============================================================================
+// Core Data Types
+// ============================================================================
 
+// 3D Position (Bevy coordinates: Y-up, meters)
 message Vec3 {
   float x = 1;
   float y = 2;
   float z = 3;
 }
 
-message Quat {
+// 3D Rotation (Euler angles in radians)
+message Rotation {
+  float pitch = 1;
+  float yaw = 2;
+  float roll = 3;
+}
+
+// 3D Velocity
+message Velocity {
   float x = 1;
   float y = 2;
   float z = 3;
-  float w = 4;
 }
 
-message SemanticTag {
-  string name = 1;
-  float value = 2;
+// Semantic tag (name -> weight pair)
+message TagPair {
+  string tag = 1;
+  float weight = 2;
 }
 
-message Transform {
-  Vec3 position = 1;
-  Quat rotation = 2;
-  Vec3 scale = 3;
+// Semantic tags for procedural content
+message SemanticTags {
+  repeated TagPair tags = 1;
 }
 
-// === Player State ===
+// ============================================================================
+// Entity Data Structures
+// ============================================================================
 
-message PlayerState {
-  uint64 entity_id = 1;
+// Player entity state
+message PlayerData {
+  uint64 id = 1;
   Vec3 position = 2;
-  Quat rotation = 3;
-  float health = 4;
-  float max_health = 5;
-  repeated ItemSlot inventory = 6;
-  repeated AbilityState abilities = 7;
-  CombatResources resources = 8;
-  MasterySnapshot mastery = 9;
-  uint64 timestamp = 10;
-}
-
-message ItemSlot {
-  uint32 slot_id = 1;
-  string item_name = 2;
-  repeated SemanticTag tags = 3;
-  float durability = 4;
-  ItemRarity rarity = 5;
-  repeated SocketState sockets = 6;
-}
-
-enum ItemRarity {
-  COMMON = 0;
-  UNCOMMON = 1;
-  RARE = 2;
-  EPIC = 3;
-  LEGENDARY = 4;
-  MYTHIC = 5;
-}
-
-message SocketState {
-  SocketColor color = 1;
-  oneof content {
-    GemState gem = 2;
-    RuneState rune = 3;
-  }
-}
-
-enum SocketColor {
-  RED = 0;
-  BLUE = 1;
-  YELLOW = 2;
-  PRISMATIC = 3;
-}
-
-message GemState {
-  string gem_id = 1;
-  uint32 tier = 2;
-  string bonus_type = 3;
-  float bonus_value = 4;
-}
-
-message RuneState {
-  string rune_id = 1;
-  string effect_type = 2;
-  float proc_chance = 3;
-}
-
-message AbilityState {
-  string ability_id = 1;
-  float cooldown_remaining = 2;
-  float cooldown_total = 3;
-  repeated SemanticTag tags = 4;
-  uint32 slot_index = 5;
-}
-
-message CombatResources {
-  float kinetic_energy = 1;
-  float thermal_energy = 2;
-  float semantic_energy = 3;
-  float rage = 4;
-}
-
-message MasterySnapshot {
-  repeated MasteryDomainState domains = 1;
-  repeated string active_specializations = 2;
-}
-
-message MasteryDomainState {
-  string domain_name = 1;
-  uint32 tier = 2;
-  float xp_current = 3;
-  float xp_required = 4;
-}
-
-// === Floor / Generation ===
-
-message FloorRequest {
-  uint64 tower_seed = 1;
-  uint32 floor_id = 2;
-}
-
-message FloorResponse {
-  uint32 floor_id = 1;
-  uint64 floor_hash = 2;
-  repeated SemanticTag biome_tags = 3;
-  FloorTier tier = 4;
-  FloorLayout layout = 5;
-  repeated MonsterSpawn monsters = 6;
-  repeated LootPoint loot_points = 7;
-}
-
-enum FloorTier {
-  ECHELON_1 = 0;
-  ECHELON_2 = 1;
-  ECHELON_3 = 2;
-  ECHELON_4 = 3;
-}
-
-message FloorLayout {
-  uint32 width = 1;
-  uint32 height = 2;
-  repeated TileData tiles = 3;
-  repeated RoomData rooms = 4;
-  repeated ConnectionData connections = 5;
-}
-
-message TileData {
-  uint32 x = 1;
-  uint32 y = 2;
-  TileType tile_type = 3;
-  repeated SemanticTag tags = 4;
-}
-
-enum TileType {
-  EMPTY = 0;
-  CORRIDOR = 1;
-  ROOM_FLOOR = 2;
-  WALL = 3;
-  DOOR = 4;
-  STAIRS_UP = 5;
-  STAIRS_DOWN = 6;
-  TRAP = 7;
-  CHEST = 8;
-  BOSS_ARENA = 9;
-  SHRINE = 10;
-  WATER = 11;
-}
-
-message RoomData {
-  uint32 room_id = 1;
-  uint32 x = 2;
-  uint32 y = 3;
-  uint32 width = 4;
-  uint32 height = 5;
-  string room_type = 6;
-  repeated SemanticTag tags = 7;
-}
-
-message ConnectionData {
-  uint32 from_room = 1;
-  uint32 to_room = 2;
-  string connection_type = 3;
-}
-
-message MonsterSpawn {
-  uint64 entity_id = 1;
-  string monster_type = 2;
-  Vec3 position = 3;
-  repeated SemanticTag tags = 4;
+  Velocity velocity = 3;
+  Rotation rotation = 4;
   float health = 5;
   float max_health = 6;
-  MonsterGrammar grammar = 7;
+  uint32 current_floor = 7;
+  string player_name = 8;
+  uint32 level = 9;
+  bool in_combat = 10;
+  uint64 target_entity = 11;
+  bool is_grounded = 12;
+  bool is_flying = 13;
+  bool is_dashing = 14;
 }
 
-message MonsterGrammar {
-  string body_type = 1;
-  string locomotion = 2;
-  string attack_style = 3;
-  repeated string modifiers = 4;
+// Monster entity state
+message MonsterData {
+  uint64 id = 1;
+  string monster_type = 2;
+  Vec3 position = 3;
+  Velocity velocity = 4;
+  Rotation rotation = 5;
+  float health = 6;
+  float max_health = 7;
+  uint32 floor_id = 8;
+  string ai_state = 9;
+  uint64 target_player = 10;
+  float attack_damage = 11;
+  float attack_range = 12;
+  float movement_speed = 13;
+  SemanticTags semantic_tags = 14;  // Monster flavor (inherited from floor + type)
 }
 
-message LootPoint {
+// Floor tile data
+message FloorTileData {
+  uint32 tile_type = 1;
+  int32 grid_x = 2;
+  int32 grid_y = 3;
+  uint32 biome_id = 4;
+  bool is_walkable = 5;
+  bool has_collision = 6;
+}
+
+// Chunk data for procedural generation
+message ChunkData {
+  uint64 seed = 1;
+  uint32 floor_id = 2;
+  repeated FloorTileData tiles = 3;
+  bytes validation_hash = 4;
+  uint32 biome_id = 5;
+  uint32 width = 6;
+  uint32 height = 7;
+  Vec3 world_offset = 8;
+  SemanticTags semantic_tags = 9;  // Floor semantic profile (biome + corruption + events)
+}
+
+// Entity snapshot (for replication)
+message EntitySnapshot {
   uint64 entity_id = 1;
-  Vec3 position = 2;
-  string loot_type = 3;
-  repeated SemanticTag tags = 4;
+  uint32 changed_fields = 2;
+  optional Vec3 position = 3;
+  optional Velocity velocity = 4;
+  optional Rotation rotation = 5;
+  optional float health = 6;
+  optional string state = 7;
 }
 
-// === Actions ===
+// World snapshot (sent every tick)
+message WorldSnapshot {
+  uint64 tick = 1;
+  uint64 timestamp = 2;
+  uint32 server_time_ms = 3;
+  repeated EntitySnapshot players = 4;
+  repeated EntitySnapshot monsters = 5;
+}
 
-message PlayerAction {
-  uint64 player_id = 1;
-  oneof action {
-    MoveAction move = 2;
-    AttackAction attack = 3;
-    ParryAction parry = 4;
-    DodgeAction dodge = 5;
-    UseAbilityAction use_ability = 6;
-    InteractAction interact = 7;
-  }
+// Player input from client
+message PlayerInput {
+  uint64 client_tick = 1;
+  uint64 player_id = 2;
+  Vec3 movement_direction = 3;
+  bool jump_pressed = 4;
+  bool dash_pressed = 5;
+  Rotation camera_rotation = 6;
+  Vec3 aim_direction = 7;
+  bool attack_pressed = 8;
+  uint64 target_entity = 9;
   uint64 timestamp = 10;
-  uint64 sequence_number = 11;
 }
 
-message MoveAction {
-  Vec3 direction = 1;
-  bool sprinting = 2;
+// Connection accepted message
+message ConnectionAccepted {
+  uint64 player_id = 1;
+  string session_token = 2;
+  uint64 server_tick = 3;
+  Vec3 spawn_position = 4;
+  uint32 spawn_floor = 5;
 }
 
-message AttackAction {
-  string weapon_id = 1;
-  uint32 combo_step = 2;
-  Vec3 direction = 3;
-}
-
-message ParryAction {
-  uint64 timing_ms = 1;
-}
-
-message DodgeAction {
-  Vec3 direction = 1;
-}
-
-message UseAbilityAction {
-  string ability_id = 1;
-  Vec3 target_position = 2;
-  uint64 target_entity = 3;
-}
-
-message InteractAction {
-  uint64 target_entity = 1;
-  string interaction_type = 2;
-}
-
-// === Action Results ===
-
-message ActionResult {
-  uint64 sequence_number = 1;
-  bool accepted = 2;
-  string rejection_reason = 3;
-  repeated StateChange changes = 4;
-  uint64 server_timestamp = 5;
-}
-
-message StateChange {
-  uint64 entity_id = 1;
-  oneof change {
-    HealthChange health = 2;
-    PositionChange position = 3;
-    StatusEffectChange status = 4;
-    ResourceChange resource = 5;
-    EntitySpawned spawned = 6;
-    EntityDespawned despawned = 7;
+// Top-level packet types
+message ServerPacket {
+  oneof payload {
+    WorldSnapshot snapshot = 1;
+    ChunkData chunk_data = 2;
+    ConnectionAccepted connection_accepted = 3;
+    bytes pong = 4;
   }
 }
 
-message HealthChange {
-  float old_value = 1;
-  float new_value = 2;
-  string source = 3;
+message ClientPacket {
+  oneof payload {
+    PlayerInput input = 1;
+    bytes ping = 2;
+  }
 }
 
-message PositionChange {
-  Vec3 new_position = 1;
-  Quat new_rotation = 2;
+// ============================================================================
+// Destruction System (Battlefield-style environmental destruction)
+// ============================================================================
+
+// Material type affects damage resistance and fracture behavior
+enum DestructionMaterial {
+  DESTRUCTION_MATERIAL_WOOD = 0;      // Low HP, splinter fracture
+  DESTRUCTION_MATERIAL_STONE = 1;     // Medium HP, chunk fracture
+  DESTRUCTION_MATERIAL_METAL = 2;     // High HP, deformation
+  DESTRUCTION_MATERIAL_CRYSTAL = 3;   // Medium HP, shatter (Voronoi)
+  DESTRUCTION_MATERIAL_ICE = 4;       // Low HP, shatter + melt VFX
+  DESTRUCTION_MATERIAL_ORGANIC = 5;   // Trees, vines — snap + ragdoll
 }
 
-message StatusEffectChange {
-  string effect_name = 1;
-  bool applied = 2;
-  float duration = 3;
+// Damage type for destruction interactions
+enum DestructionDamageType {
+  DESTRUCTION_DAMAGE_KINETIC = 0;     // Physical impact (melee, projectile)
+  DESTRUCTION_DAMAGE_EXPLOSIVE = 1;   // Radius damage, strongest vs structures
+  DESTRUCTION_DAMAGE_ELEMENTAL_FIRE = 2;   // Burns wood, melts ice
+  DESTRUCTION_DAMAGE_ELEMENTAL_ICE = 3;    // Freezes then shatters
+  DESTRUCTION_DAMAGE_ELEMENTAL_LIGHTNING = 4; // Chains through metal
+  DESTRUCTION_DAMAGE_SEMANTIC = 5;    // Tower energy — corruption damage
 }
 
-message ResourceChange {
-  string resource_type = 1;
-  float old_value = 2;
-  float new_value = 3;
+// Single fragment within a destructible object
+message DestructionFragment {
+  uint32 cluster_id = 1;             // Fragment group ID
+  float hp = 2;                      // Current HP (0 = destroyed)
+  float max_hp = 3;                  // Maximum HP
+  bool destroyed = 4;                // Is this fragment destroyed?
+  Vec3 position_offset = 5;          // Offset from parent entity
+  Vec3 impulse = 6;                  // Physics impulse when destroyed
 }
 
-message EntitySpawned {
-  string entity_type = 1;
-  Vec3 position = 2;
-  repeated SemanticTag tags = 3;
+// Full state of a destructible entity
+message DestructibleState {
+  uint64 entity_id = 1;              // Server entity ID
+  string template_id = 2;            // Destructible template (e.g. "wall_stone_3m")
+  DestructionMaterial material = 3;
+  float total_hp = 4;                // Sum of all fragment HP
+  float max_total_hp = 5;
+  bool collapsed = 6;                // Full structural collapse
+  bool supports_rebuild = 7;         // Can players repair this?
+  uint32 floor_id = 8;
+  Vec3 position = 9;                 // World position
+  Rotation rotation = 10;
+  repeated DestructionFragment fragments = 11;
+  bytes fragment_mask = 12;          // Bitmask: 1 = destroyed (compact sync)
+  SemanticTags semantic_tags = 13;   // Semantic profile (affects loot on destroy)
+  float rebuild_progress = 14;       // 0.0-1.0, if being repaired
 }
 
-message EntityDespawned {
-  string reason = 1;
+// Request: Apply destruction damage to an entity
+message DestructionDamageRequest {
+  uint64 player_id = 1;              // Who dealt the damage
+  uint64 target_entity_id = 2;       // Which destructible
+  Vec3 impact_point = 3;             // World-space hit location
+  float damage = 4;                  // Raw damage amount
+  float radius = 5;                  // AoE radius (0 = point damage)
+  DestructionDamageType damage_type = 6;
+  string weapon_id = 7;              // Weapon used (for material interactions)
+  string ability_id = 8;             // Ability used (for semantic interactions)
 }
 
-// === Mutations (Seed + Delta model) ===
+// Response: Result of destruction damage
+message DestructionDamageResponse {
+  bool success = 1;
+  uint64 target_entity_id = 2;
+  float damage_dealt = 3;            // Actual damage after resistances
+  repeated uint32 newly_destroyed_clusters = 4;  // Clusters destroyed this hit
+  bool structural_collapse = 5;      // Did the whole thing collapse?
+  repeated DestructionFragment updated_fragments = 6;
+  bytes updated_fragment_mask = 7;
+  repeated LootDrop destruction_loot = 8;  // Resources dropped
+  float mastery_xp = 9;              // XP for destruction mastery
+}
 
-message FloorMutation {
+// Loot dropped from destruction
+message LootDrop {
+  string item_template_id = 1;
+  uint32 quantity = 2;
+  Vec3 spawn_position = 3;
+}
+
+// Request: Get current destruction state for a floor
+message FloorDestructionStateRequest {
   uint32 floor_id = 1;
-  uint64 entity_id = 2;
-  MutationType mutation_type = 3;
-  bytes data = 4;
-  uint64 timestamp = 5;
+  uint64 player_id = 2;              // For visibility filtering
 }
 
-enum MutationType {
-  ENTITY_SPAWNED = 0;
-  ENTITY_KILLED = 1;
-  ENTITY_DAMAGED = 2;
-  CHEST_OPENED = 3;
-  ECHO_CREATED = 4;
-  ARCHITECTURAL_CHANGE = 5;
-  LOOT_DROPPED = 6;
-  TRAP_TRIGGERED = 7;
+// Response: All destructible states on a floor
+message FloorDestructionStateResponse {
+  uint32 floor_id = 1;
+  repeated DestructibleState destructibles = 2;
+  uint32 total_destructibles = 3;
+  uint32 destroyed_count = 4;
+  float destruction_percentage = 5;  // 0.0-1.0
 }
 
-// === World Cycle ===
+// Request: Rebuild/repair a destroyed object
+message RebuildRequest {
+  uint64 player_id = 1;
+  uint64 target_entity_id = 2;
+  repeated string material_items = 3; // Items consumed for repair
+}
 
-message WorldCycleState {
-  string current_phase = 1;
-  float phase_progress = 2;
-  float time_remaining = 3;
-  repeated SemanticTag active_modifiers = 4;
+// Response: Rebuild result
+message RebuildResponse {
+  bool success = 1;
+  string failure_reason = 2;
+  float new_hp = 3;
+  float rebuild_progress = 4;
+  float mastery_xp = 5;             // Building mastery XP
+}
+
+// Delta update: Sent to clients every tick for changed destructibles
+message DestructionDelta {
+  uint64 entity_id = 1;
+  bytes fragment_mask = 2;            // Updated bitmask
+  repeated uint32 newly_destroyed = 3;
+  repeated DestructionFragment changed_fragments = 4;
+  bool collapsed = 5;
+  Vec3 collapse_impulse = 6;         // Direction of collapse (for VFX)
 }

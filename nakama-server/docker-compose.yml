@@ -19,24 +19,16 @@ services:
   nakama:
     image: heroiclabs/nakama:3.21.1
     container_name: tower-nakama
-    # Use environment variables for database config (higher precedence than config file)
-    environment:
-      # Database connection (PostgreSQL, not CockroachDB)
-      - NAKAMA_DATABASE_ADDRESS=postgres:5432
-      - NAKAMA_DATABASE_USER=nakama
-      - NAKAMA_DATABASE_PASSWORD=tower_db_password_2026
-      - NAKAMA_DATABASE_NAME=nakama
-      # Server name (max 16 chars)
-      - NAKAMA_NAME=tower-game
-      # Logging
-      - NAKAMA_LOG_LEVEL=INFO
-    command: >
-      nakama
-      --database.address postgres:5432
-      --database.user nakama
-      --database.password tower_db_password_2026
-      --database.name nakama
-      --config /nakama/data/local.yml
+    entrypoint:
+      - "/bin/sh"
+      - "-ecx"
+      - >
+        /nakama/nakama migrate up
+        --database.address 'nakama:tower_db_password_2026@postgres:5432/nakama'
+        &&
+        exec /nakama/nakama
+        --database.address 'nakama:tower_db_password_2026@postgres:5432/nakama'
+        --config /nakama/data/local.yml
     restart: unless-stopped
     depends_on:
       postgres:

@@ -516,19 +516,18 @@ function broadcast_positions(state, dispatcher)
     end
 end
 
--- ============ Register Match Handler ============
+-- ============ Export Match Handler ============
+-- Nakama Lua match handlers must return a table of callbacks.
+-- Matches are created via nk.match_create("tower_match", params) from tower_main.lua.
 
-nk.register_match(
-    "tower_match",
-    {
-        match_init = match_init,
-        match_join_attempt = match_join_attempt,
-        match_join = match_join,
-        match_leave = match_leave,
-        match_loop = match_loop,
-        match_terminate = match_terminate,
-        match_signal = match_signal,
-    }
-)
+nk.logger_info("Tower Match handler loaded (max " .. MAX_PLAYERS .. " players, " .. TICK_RATE .. " tick/s)")
 
-nk.logger_info("Tower Match handler registered (max " .. MAX_PLAYERS .. " players, " .. TICK_RATE .. " tick/s)")
+return {
+    match_init = match_init,
+    match_join_attempt = match_join_attempt,
+    match_join = match_join,
+    match_leave = match_leave,
+    match_loop = match_loop,
+    match_terminate = match_terminate,
+    match_signal = match_signal,
+}

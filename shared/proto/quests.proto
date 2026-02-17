@@ -1,0 +1,395 @@
+// Tower Game - Quests, Factions, Seasons, Achievements
+syntax = "proto3";
+
+package tower.quests;
+
+import "entities.proto";
+import "game_state.proto";
+
+// ============================================================================
+// Quest System
+// ============================================================================
+
+enum QuestType {
+  QUEST_TYPE_MAIN_STORY = 0;
+  QUEST_TYPE_SIDE = 1;
+  QUEST_TYPE_DAILY = 2;
+  QUEST_TYPE_WEEKLY = 3;
+  QUEST_TYPE_SEASONAL = 4;
+  QUEST_TYPE_CHAIN = 5;
+  QUEST_TYPE_TUTORIAL = 6;
+}
+
+enum QuestTier {
+  QUEST_TIER_EASY = 0;
+  QUEST_TIER_NORMAL = 1;
+  QUEST_TIER_HARD = 2;
+  QUEST_TIER_ELITE = 3;
+  QUEST_TIER_LEGENDARY = 4;
+}
+
+enum QuestStatus {
+  QUEST_STATUS_NOT_STARTED = 0;
+  QUEST_STATUS_IN_PROGRESS = 1;
+  QUEST_STATUS_READY_TO_COMPLETE = 2;
+  QUEST_STATUS_COMPLETED = 3;
+  QUEST_STATUS_FAILED = 4;
+}
+
+enum ObjectiveType {
+  OBJECTIVE_TYPE_KILL_MONSTER = 0;
+  OBJECTIVE_TYPE_COLLECT_ITEM = 1;
+  OBJECTIVE_TYPE_REACH_FLOOR = 2;
+  OBJECTIVE_TYPE_CRAFT_ITEM = 3;
+  OBJECTIVE_TYPE_TALK_TO_NPC = 4;
+  OBJECTIVE_TYPE_ESCORT = 5;
+  OBJECTIVE_TYPE_DISCOVER = 6;
+  OBJECTIVE_TYPE_USE_ABILITY = 7;
+  OBJECTIVE_TYPE_SPEND_GOLD = 8;
+  OBJECTIVE_TYPE_PARRY_COUNT = 9;
+  OBJECTIVE_TYPE_DODGE_COUNT = 10;
+  OBJECTIVE_TYPE_COMBO_COUNT = 11;
+}
+
+// Quest template (stored in LMDB)
+message QuestTemplate {
+  string id = 1;                    // "main_001_first_ascent"
+  string name = 2;
+  string description = 3;
+  QuestType quest_type = 4;
+  QuestTier quest_tier = 5;
+
+  // Requirements
+  uint32 required_floor_min = 10;
+  string required_mastery_domain = 11;
+  tower.entities.MasteryTier required_mastery_tier = 12;
+  string prerequisite_quest_id = 13;
+  uint32 min_floor_clears = 14;
+
+  // Objectives
+  repeated QuestObjective objectives = 20;
+
+  // Rewards
+  QuestRewards rewards = 30;
+
+  // Repeatability
+  bool is_repeatable = 40;
+  string reset_interval = 41;      // "daily", "weekly", "monthly", "never"
+
+  // Dialogue/story
+  string npc_id = 50;              // Quest giver
+  repeated string dialogue_ids = 51;
+
+  // Chain quest
+  string next_quest_id = 60;       // Next in chain
+  uint32 chain_index = 61;         // Position in chain (1, 2, 3...)
+}
+
+message QuestObjective {
+  ObjectiveType objective_type = 1;
+  string target = 2;               // Monster ID, item ID, floor ID, etc.
+  uint32 required_count = 3;
+  string description = 4;          // "Kill 10 Goblin Scouts"
+}
+
+message QuestRewards {
+  uint64 gold = 1;
+  map<string, uint64> mastery_exp = 2; // domain → XP
+  repeated QuestRewardItem items = 3;
+  string unlock_ability_id = 4;
+  string unlock_recipe_id = 5;
+  uint32 reputation_faction_id = 6;
+  int32 reputation_amount = 7;
+}
+
+message QuestRewardItem {
+  string item_template_id = 1;
+  uint32 quantity = 2;
+  bool is_choice = 3;              // Player picks from choices
+}
+
+// Player quest progress (stored in PostgreSQL)
+message PlayerQuest {
+  uint64 player_id = 1;
+  string quest_id = 2;
+  QuestStatus status = 3;
+  repeated ObjectiveProgress objectives = 4;
+  int64 started_at = 5;
+  int64 completed_at = 6;
+  uint32 times_completed = 7;
+}
+
+message ObjectiveProgress {
+  uint32 objective_index = 1;
+  uint32 current_count = 2;
+  bool is_complete = 3;
+}
+
+// ============================================================================
+// Faction System (4-component relations)
+// ============================================================================
+
+enum FactionAlignment {
+  FACTION_ALIGNMENT_ORDER = 0;
+  FACTION_ALIGNMENT_CHAOS = 1;
+  FACTION_ALIGNMENT_NEUTRAL = 2;
+}
+
+enum ReputationStanding {
+  REPUTATION_STANDING_HATED = 0;           // -42000 to -21000
+  REPUTATION_STANDING_HOSTILE = 1;         // -21000 to -3000
+  REPUTATION_STANDING_UNFRIENDLY = 2;     // -3000 to -1
+  REPUTATION_STANDING_NEUTRAL = 3;         // 0 to 2999
+  REPUTATION_STANDING_FRIENDLY = 4;        // 3000 to 8999
+  REPUTATION_STANDING_HONORED = 5;         // 9000 to 20999
+  REPUTATION_STANDING_REVERED = 6;         // 21000 to 41999
+  REPUTATION_STANDING_EXALTED = 7;         // 42000
+}
+
+// Faction template (stored in LMDB)
+message FactionTemplate {
+  string id = 1;                    // "iron_guild"
+  string name = 2;
+  string description = 3;
+  FactionAlignment alignment = 4;
+
+  // 4-component relations (from CLAUDE.md)
+  repeated FactionRelation relations = 10;
+
+  // Reputation rewards
+  repeated ReputationReward rewards = 20;
+
+  // Visuals
+  string banner_icon = 30;
+  string color_primary = 31;
+  string color_secondary = 32;
+}
+
+message FactionRelation {
+  string target_faction_id = 1;
+  int32 political = 2;             // -100 to +100
+  int32 economic = 3;
+  int32 military = 4;
+  int32 cultural = 5;
+}
+
+message ReputationReward {
+  ReputationStanding required_standing = 1;
+  string reward_type = 2;          // "item", "recipe", "ability", "title"
+  string reward_id = 3;
+  string description = 4;
+}
+
+// Player faction reputation (stored in PostgreSQL)
+message PlayerReputation {
+  uint64 player_id = 1;
+  string faction_id = 2;
+  int32 reputation = 3;            // -42000 to +42000
+  ReputationStanding standing = 4;
+}
+
+// ============================================================================
+// Season Pass
+// ============================================================================
+
+message SeasonPass {
+  string id = 1;                   // "season_01"
+  string name = 2;
+  uint32 season_number = 3;
+  int64 start_date = 4;
+  int64 end_date = 5;
+  uint32 max_level = 6;            // e.g., 50
+  repeated SeasonReward rewards = 7;
+}
+
+message SeasonReward {
+  uint32 level = 1;
+  string free_reward_id = 2;       // Item for all players
+  string premium_reward_id = 3;    // Item for pass holders
+}
+
+// Player season progress (stored in PostgreSQL)
+message PlayerSeasonProgress {
+  uint64 player_id = 1;
+  string season_id = 2;
+  uint32 level = 3;
+  uint64 experience = 4;
+  bool has_premium = 5;
+  repeated uint32 claimed_levels = 6;
+}
+
+// ============================================================================
+// Achievement System
+// ============================================================================
+
+enum AchievementCategory {
+  ACHIEVEMENT_CATEGORY_COMBAT = 0;
+  ACHIEVEMENT_CATEGORY_EXPLORATION = 1;
+  ACHIEVEMENT_CATEGORY_CRAFTING = 2;
+  ACHIEVEMENT_CATEGORY_SOCIAL = 3;
+  ACHIEVEMENT_CATEGORY_MASTERY = 4;
+  ACHIEVEMENT_CATEGORY_COLLECTION = 5;
+  ACHIEVEMENT_CATEGORY_SEASONAL = 6;
+}
+
+// Achievement template (stored in LMDB)
+message AchievementTemplate {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  AchievementCategory category = 4;
+
+  // Criteria
+  repeated AchievementCriteria criteria = 10;
+
+  // Rewards
+  string reward_title = 20;        // Display title
+  string reward_item_id = 21;
+  uint32 achievement_points = 22;
+}
+
+message AchievementCriteria {
+  string criteria_type = 1;        // "kill", "collect", "reach_floor", "craft"
+  string target = 2;
+  uint32 required_count = 3;
+}
+
+// Player achievement progress (stored in PostgreSQL)
+message PlayerAchievement {
+  uint64 player_id = 1;
+  string achievement_id = 2;
+  bool is_completed = 3;
+  repeated uint32 criteria_progress = 4; // Progress per criteria
+  int64 completed_at = 5;
+}
+
+// ============================================================================
+// PvP System (Asynchronous Shadow Duels)
+// ============================================================================
+
+// Shadow recording (player's ghost for async PvP)
+message ShadowRecording {
+  uint64 player_id = 1;
+  string player_name = 2;
+
+  // Equipment snapshot
+  repeated string equipped_items = 10;
+
+  // Ability loadout
+  repeated string ability_loadout = 11;
+
+  // Mastery snapshot
+  repeated tower.entities.MasteryProgress mastery = 12;
+
+  // Recorded actions (replay data)
+  repeated ShadowAction actions = 20;
+
+  // Metadata
+  int64 recorded_at = 30;
+  uint32 pvp_rating = 31;
+}
+
+message ShadowAction {
+  uint32 timestamp_ms = 1;         // Relative to recording start
+  string action_type = 2;          // "move", "attack", "ability", "dodge", "parry"
+  tower.game.Vec3 position = 3;
+  tower.game.Rotation rotation = 4;
+  string ability_id = 5;
+}
+
+// Shadow duel result
+message DuelResult {
+  uint64 id = 1;
+  uint64 challenger_id = 2;
+  uint64 shadow_owner_id = 3;
+  uint64 winner_id = 4;
+
+  int32 rating_change_challenger = 10;
+  int32 rating_change_defender = 11;
+
+  uint32 duration_ms = 20;
+  int64 timestamp = 21;
+}
+
+// ============================================================================
+// Death & Echo System (Tower Game unique)
+// ============================================================================
+
+// Echo left by dead player (helps future players)
+message PlayerEcho {
+  uint64 id = 1;
+  uint64 player_id = 2;
+  string player_name = 3;
+  uint32 floor_id = 4;
+  tower.game.Vec3 position = 5;
+
+  // Death context
+  string cause_of_death = 10;      // Monster ID, trap, corruption
+  string last_action = 11;
+
+  // Echo effect
+  string echo_type = 12;           // "warning", "buff", "loot", "hint"
+  string echo_message = 13;
+  float echo_strength = 14;        // Fades over time (0.0-1.0)
+
+  int64 created_at = 20;
+  int64 expires_at = 21;
+
+  // Semantic influence on floor
+  tower.game.SemanticTags semantic_trace = 30;
+}
+
+// ============================================================================
+// NPC Templates
+// ============================================================================
+
+enum NPCType {
+  NPC_TYPE_MERCHANT = 0;
+  NPC_TYPE_QUEST_GIVER = 1;
+  NPC_TYPE_TRAINER = 2;
+  NPC_TYPE_BANKER = 3;
+  NPC_TYPE_AUCTIONEER = 4;
+  NPC_TYPE_BLACKSMITH = 5;        // Repair/enhance
+  NPC_TYPE_ALCHEMIST = 6;
+  NPC_TYPE_COOK = 7;
+  NPC_TYPE_ENCHANTER = 8;
+  NPC_TYPE_FACTION_VENDOR = 9;
+  NPC_TYPE_MENTOR = 10;
+}
+
+message NPCTemplate {
+  string id = 1;
+  string name = 2;
+  NPCType npc_type = 3;
+  string faction_id = 4;
+
+  // Location
+  uint32 floor_id = 10;
+  tower.game.Vec3 position = 11;
+  tower.game.Rotation rotation = 12;
+
+  // Inventory (for merchants)
+  repeated string shop_items = 20;
+
+  // Quests (for quest givers)
+  repeated string quest_ids = 21;
+
+  // Dialogue
+  repeated DialogueLine dialogue = 30;
+
+  // Visuals
+  string model_id = 40;
+  string portrait_id = 41;
+}
+
+message DialogueLine {
+  uint32 index = 1;
+  string text = 2;
+  repeated DialogueChoice choices = 3;
+}
+
+message DialogueChoice {
+  string text = 1;
+  uint32 next_index = 2;           // Next dialogue line
+  string action = 3;               // "accept_quest:quest_id", "open_shop", etc.
+}

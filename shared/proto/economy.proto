@@ -1,0 +1,152 @@
+// Tower Game - Economy & Crafting Systems
+syntax = "proto3";
+
+package tower.economy;
+
+import "entities.proto";
+
+// ============================================================================
+// Crafting System
+// ============================================================================
+
+enum CraftingStation {
+  CRAFTING_STATION_FORGE = 0;
+  CRAFTING_STATION_ALCHEMY_LAB = 1;
+  CRAFTING_STATION_KITCHEN = 2;
+  CRAFTING_STATION_WORKBENCH = 3;
+  CRAFTING_STATION_ENCHANTING_TABLE = 4;
+}
+
+// Crafting recipe definition (stored in LMDB)
+message CraftingRecipe {
+  string id = 1;                    // "iron_sword_recipe"
+  string name = 2;                  // "Iron Sword"
+  string profession = 3;           // "SmithingMastery"
+  tower.entities.MasteryTier required_tier = 4;
+
+  // Ingredients
+  repeated RecipeIngredient ingredients = 10;
+
+  // Result
+  string result_item_id = 20;      // ItemTemplate ID
+  uint32 result_quantity = 21;
+  float base_success_rate = 22;    // 0.0-1.0
+
+  // Requirements
+  CraftingStation station = 30;
+  uint32 gold_cost = 31;
+  uint32 craft_time_ms = 32;
+
+  // Learning
+  bool learned_by_default = 40;
+  string recipe_scroll_id = 41;    // Item to learn this recipe
+}
+
+message RecipeIngredient {
+  string item_template_id = 1;
+  uint32 quantity = 2;
+}
+
+// ============================================================================
+// Trading System
+// ============================================================================
+
+enum TradeStatus {
+  TRADE_STATUS_PENDING = 0;
+  TRADE_STATUS_COMPLETED = 1;
+  TRADE_STATUS_CANCELLED = 2;
+}
+
+// Direct player-to-player trade
+message Trade {
+  uint64 id = 1;
+  uint64 player1_id = 2;
+  uint64 player2_id = 3;
+
+  repeated TradeItem player1_items = 10;
+  repeated TradeItem player2_items = 11;
+  uint64 player1_gold = 12;
+  uint64 player2_gold = 13;
+
+  bool player1_confirmed = 20;
+  bool player2_confirmed = 21;
+
+  TradeStatus status = 30;
+  int64 created_at = 31;
+}
+
+message TradeItem {
+  string item_template_id = 1;
+  uint32 quantity = 2;
+  uint64 item_instance_id = 3;    // For unique items
+}
+
+// ============================================================================
+// Auction House
+// ============================================================================
+
+enum AuctionStatus {
+  AUCTION_STATUS_ACTIVE = 0;
+  AUCTION_STATUS_SOLD = 1;
+  AUCTION_STATUS_EXPIRED = 2;
+  AUCTION_STATUS_CANCELLED = 3;
+}
+
+message AuctionListing {
+  uint64 id = 1;
+  uint64 seller_id = 2;
+  string item_template_id = 3;
+  uint64 item_instance_id = 4;
+  uint32 quantity = 5;
+
+  uint64 buyout_price = 10;
+  uint64 starting_bid = 11;
+  uint64 current_bid = 12;
+  uint64 highest_bidder_id = 13;
+
+  int64 created_at = 20;
+  int64 expires_at = 21;
+  AuctionStatus status = 22;
+
+  // Tax
+  uint32 tax_rate_percent = 30;    // Auction house tax (5-15%)
+}
+
+// ============================================================================
+// Economy Tracking
+// ============================================================================
+
+// Wealth tax brackets (progressive)
+message TaxBracket {
+  uint64 min_gold = 1;
+  uint64 max_gold = 2;
+  float tax_rate = 3;               // 0.0-1.0
+}
+
+// Economy snapshot for monitoring (server-side)
+message EconomySnapshot {
+  int64 timestamp = 1;
+  uint64 total_gold_supply = 2;
+  uint64 gold_in_circulation = 3;
+  uint64 gold_in_banks = 4;
+  uint32 active_auctions = 5;
+  uint64 daily_trade_volume = 6;
+
+  // Source distribution (CLAUDE.md: 40/25/20/15)
+  float government_income_pct = 10;
+  float crafting_income_pct = 11;
+  float market_income_pct = 12;
+  float credit_income_pct = 13;
+}
+
+// Transaction log (audit trail)
+message TransactionLog {
+  uint64 id = 1;
+  string transaction_type = 2;     // "trade", "auction", "vendor", "craft", "tax"
+  uint64 from_player = 3;
+  uint64 to_player = 4;
+  uint64 gold_amount = 5;
+  string item_id = 6;
+  uint32 item_quantity = 7;
+  int64 timestamp = 8;
+}

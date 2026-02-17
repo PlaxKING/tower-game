@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: tower-postgres
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdb
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --auth-local=md5"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/10-create-tower-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nakama:
+    image: heroiclabs/nakama:3.21.1
+    container_name: tower-nakama
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - /nakama/nakama
+      - --database.address=postgres:localdb@postgres:5432/nakama
+      - --logger.level=DEBUG
+      - --session.token_expiry_sec=7200
+    ports:
+      - "7349:7349"   # gRPC API
+      - "7350:7350"   # HTTP API
+      - "7351:7351"   # Console
+    volumes:
+      - ./nakama-server/modules:/nakama/data/modules
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/nakama/nakama", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bevy-server:
+    build:
+      context: .
+      dockerfile: bevy-server/Dockerfile
+    container_name: tower-bevy-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:localdb@postgres:5432/tower_game
+      LMDB_PATH: /app/data/templates
+      LMDB_MAX_SIZE: "500002816"
+      API_PORT: "50051"
+      RUST_LOG: info
+    ports:
+      - "5000:5000/udp"    # Renet game server (UDP)
+      - "50051:50051"      # HTTP API (JSON)
+    volumes:
+      - bevy-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:50051/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres-data:
+  bevy-data:
