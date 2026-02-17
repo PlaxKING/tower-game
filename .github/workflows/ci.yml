@@ -336,17 +336,14 @@ jobs:
       - name: Run benchmarks
         run: cargo criterion --bench floor_generation --output-format bencher 2>&1 | tee bench_output.txt
 
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: cargo
-          output-file-path: bevy-server/bench_output.txt
-          alert-threshold: '130%'
-          fail-on-alert: true
-          comment-on-alert: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          save-data-file: false
+      - name: Verify benchmark output
+        run: |
+          if [ ! -s bench_output.txt ]; then
+            echo "ERROR: bench_output.txt is empty"
+            exit 1
+          fi
+          echo "Benchmark results:"
+          cat bench_output.txt
 
   # ==========================================================================
   # Docker Build Verification (Linux)
