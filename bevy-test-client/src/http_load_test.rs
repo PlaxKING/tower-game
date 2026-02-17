@@ -84,11 +84,9 @@ fn all_endpoints() -> Vec<Endpoint> {
             path: "/tower.CombatService/CalculateDamage",
             body: Some(json!({
                 "attacker_id": 1,
-                "target_id": 2,
-                "ability_id": "basic_attack",
-                "hit_angle": 0.0,
-                "combo_count": 1,
-                "semantic_tags": [{"tag": "fire", "weight": 0.5}]
+                "defender_id": 2,
+                "weapon_id": "iron_sword",
+                "ability_id": "basic_attack"
             })),
         },
         // Mastery
@@ -99,14 +97,14 @@ fn all_endpoints() -> Vec<Endpoint> {
             body: Some(json!({"player_id": 1})),
         },
         Endpoint {
-            name: "AddMasteryXP",
+            name: "TrackProgress",
             method: "POST",
-            path: "/tower.MasteryService/AddMasteryXP",
+            path: "/tower.MasteryService/TrackProgress",
             body: Some(json!({
                 "player_id": 1,
                 "domain": "sword",
-                "xp_amount": 10.0,
-                "action_context": "training"
+                "action_type": "training",
+                "xp_amount": 10.0
             })),
         },
         // Economy
@@ -344,10 +342,7 @@ async fn main() {
     }
 
     println!("{}", "-".repeat(85));
-    println!(
-        "{:<25} {:>8} {:>8}",
-        "TOTAL", total_reqs, total_errors
-    );
+    println!("{:<25} {:>8} {:>8}", "TOTAL", total_reqs, total_errors);
 
     // Write JSON results file
     let results = json!({
@@ -378,7 +373,10 @@ async fn main() {
     });
 
     let results_path = "load_test_results.json";
-    if let Err(e) = std::fs::write(results_path, serde_json::to_string_pretty(&results).unwrap()) {
+    if let Err(e) = std::fs::write(
+        results_path,
+        serde_json::to_string_pretty(&results).unwrap(),
+    ) {
         eprintln!("Failed to write results: {}", e);
     } else {
         println!("\nResults written to {}", results_path);
@@ -387,7 +385,10 @@ async fn main() {
     // Exit with error code if error rate > 10%
     let error_rate = total_errors as f64 / total_reqs.max(1) as f64;
     if error_rate > 0.10 {
-        eprintln!("\nERROR: Error rate {:.1}% exceeds 10% threshold", error_rate * 100.0);
+        eprintln!(
+            "\nERROR: Error rate {:.1}% exceeds 10% threshold",
+            error_rate * 100.0
+        );
         std::process::exit(1);
     }
 }
