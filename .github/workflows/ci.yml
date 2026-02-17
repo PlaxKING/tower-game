@@ -330,8 +330,11 @@ jobs:
           key: ${{ runner.os }}-cargo-bevy-bench-${{ hashFiles('bevy-server/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-bevy-bench-
 
+      - name: Install cargo-criterion
+        run: cargo install cargo-criterion
+
       - name: Run benchmarks
-        run: cargo bench --bench floor_generation -- --output-format bencher | tee bench_output.txt
+        run: cargo criterion --bench floor_generation --output-format bencher 2>/dev/null | tee bench_output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1

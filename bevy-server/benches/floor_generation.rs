@@ -15,6 +15,7 @@ fn bench_single_floor_generation(c: &mut Criterion) {
                 floor_size: 10,
                 enable_warmup: false,
                 warmup_count: 0,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);
@@ -30,6 +31,7 @@ fn bench_single_floor_generation(c: &mut Criterion) {
                 floor_size: 50,
                 enable_warmup: false,
                 warmup_count: 0,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);
@@ -45,6 +47,7 @@ fn bench_single_floor_generation(c: &mut Criterion) {
                 floor_size: 100,
                 enable_warmup: false,
                 warmup_count: 0,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);
@@ -64,6 +67,7 @@ fn bench_cache_performance(c: &mut Criterion) {
                 floor_size: 50,
                 enable_warmup: false,
                 warmup_count: 0,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);
@@ -84,6 +88,7 @@ fn bench_cache_performance(c: &mut Criterion) {
                 floor_size: 50,
                 enable_warmup: false,
                 warmup_count: 0,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);
@@ -118,6 +123,7 @@ fn bench_parallel_generation(c: &mut Criterion) {
                         floor_size: 50,
                         enable_warmup: false,
                         warmup_count: 0,
+                        ..Default::default()
                     };
 
                     let generator = FloorGenerator::new(config);
@@ -157,6 +163,7 @@ fn bench_warmup_time(c: &mut Criterion) {
                 floor_size: 50,
                 enable_warmup: true,
                 warmup_count: 10,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);
@@ -172,6 +179,7 @@ fn bench_warmup_time(c: &mut Criterion) {
                 floor_size: 50,
                 enable_warmup: true,
                 warmup_count: 50,
+                ..Default::default()
             };
 
             let generator = FloorGenerator::new(config);

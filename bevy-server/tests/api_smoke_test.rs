@@ -10,12 +10,35 @@ use axum::body::Body;
 use http::Request;
 use serde_json::Value;
 use std::sync::Arc;
+use tokio::sync::OnceCell;
 use tower::ServiceExt;
 use tower_bevy_server::api;
 use tower_bevy_server::ecs_bridge;
 use tower_bevy_server::metrics::ServerMetrics;
 use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
+use tower_bevy_server::storage::postgres::PostgresStore;
 use tower_bevy_server::storage::seed_data;
+
+/// Shared PostgresStore — initialized once, reused by all tests.
+/// Avoids migration race conditions when tests run in parallel.
+static PG_STORE: OnceCell<Arc<PostgresStore>> = OnceCell::const_new();
+
+async fn get_shared_pg() -> Arc<PostgresStore> {
+    PG_STORE
+        .get_or_init(|| async {
+            let pg = PostgresStore::new(
+                "postgres://postgres:localdb@localhost:5433/tower_game",
+                2,
+            )
+            .await
+            .expect(
+                "PostgreSQL not available at localhost:5433 — run 'docker compose up -d postgres'",
+            );
+            Arc::new(pg)
+        })
+        .await
+        .clone()
+}
 
 /// Helper: create a temporary LMDB + API router for testing.
 /// Returns (router, temp_dir) — temp_dir must stay alive for the duration.
@@ -34,17 +57,11 @@ async fn create_test_router() -> (axum::Router, tempfile::TempDir) {
 
     let (cmd_sender, _cmd_receiver, world_snapshot) = ecs_bridge::create_bridge();
 
-    // Connect to real PostgreSQL (Docker on port 5433)
-    let pg = tower_bevy_server::storage::postgres::PostgresStore::new(
-        "postgres://postgres:localdb@localhost:5433/tower_game",
-        2,
-    )
-    .await
-    .expect("PostgreSQL not available at localhost:5433 — run 'docker compose up -d postgres'");
+    let pg = get_shared_pg().await;
 
     let state = api::ApiState {
         lmdb,
-        pg: Arc::new(pg),
+        pg,
         ecs_commands: cmd_sender,
         world_snapshot,
         metrics: ServerMetrics::new(),
