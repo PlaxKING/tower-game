@@ -175,7 +175,7 @@ impl Destructible {
 
     /// Generate bitmask of destroyed fragments (1 bit per fragment)
     pub fn fragment_mask(&self) -> Vec<u8> {
-        let byte_count = (self.fragments.len() + 7) / 8;
+        let byte_count = self.fragments.len().div_ceil(8);
         let mut mask = vec![0u8; byte_count];
         for (i, frag) in self.fragments.iter().enumerate() {
             if frag.destroyed {
@@ -206,8 +206,10 @@ impl Destructible {
         let material_modifier = self.material.damage_modifier(damage_type);
         let effective_damage = damage * material_modifier;
 
-        let mut result = DestructionResult::default();
-        result.damage_dealt = effective_damage;
+        let mut result = DestructionResult {
+            damage_dealt: effective_damage,
+            ..Default::default()
+        };
 
         // Apply damage to fragments within radius
         for fragment in &mut self.fragments {
@@ -582,6 +584,7 @@ impl FloorDestructionManager {
     }
 
     /// Apply damage to a destructible entity
+    #[allow(clippy::too_many_arguments)]
     pub fn apply_damage(
         &mut self,
         entity_id: u64,

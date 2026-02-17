@@ -561,7 +561,7 @@ pub fn generate_loot(seed: u64, config: &LootConfig) -> Vec<LootDrop> {
                     .iter()
                     .map(|(k, v)| (k.clone(), *v))
                     .collect(),
-                gold_value: (50 * config.loot_tier) as u32,
+                gold_value: 50 * config.loot_tier,
             });
         }
     }

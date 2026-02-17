@@ -266,6 +266,7 @@ pub fn update_world_snapshot(
 }
 
 /// System: Process incoming game commands from API handlers
+#[allow(clippy::too_many_arguments)]
 pub fn process_game_commands(
     mut cmd_res: ResMut<GameCommandReceiver>,
     mut commands: Commands,

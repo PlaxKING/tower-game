@@ -108,6 +108,7 @@ impl PostgresStore {
     // ========================================================================
 
     /// Create a new player
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_player(
         &self,
         username: &str,
@@ -1115,6 +1116,7 @@ impl PostgresStore {
     // ========================================================================
 
     /// Record a death echo
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_echo(
         &self,
         player_id: i64,
@@ -1170,6 +1172,7 @@ impl PostgresStore {
     // ========================================================================
 
     /// Record a shadow for PvP
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_shadow(
         &self,
         player_id: i64,

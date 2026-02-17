@@ -215,7 +215,7 @@ async fn list_auctions(
     State(state): State<ApiState>,
     Json(req): Json<AuctionListRequest>,
 ) -> Json<AuctionListResponse> {
-    let per_page = req.per_page.min(50).max(1) as i32;
+    let per_page = req.per_page.clamp(1, 50) as i32;
     let offset = (req.page * req.per_page) as i32;
 
     let rows = state

@@ -151,7 +151,7 @@ async fn apply_damage(
     let mut manager = FloorDestructionManager::new();
 
     // Ensure the target exists (spawn if needed for demo)
-    if manager.floors.get(&req.floor_id).is_none()
+    if !manager.floors.contains_key(&req.floor_id)
         || !manager
             .floors
             .get(&req.floor_id)
