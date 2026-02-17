@@ -345,7 +345,8 @@ jobs:
           fail-on-alert: true
           comment-on-alert: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
+          auto-push: false
+          save-data-file: false
 
   # ==========================================================================
   # Docker Build Verification (Linux)
