@@ -343,7 +343,18 @@ jobs:
             exit 1
           fi
           echo "Benchmark results:"
-          cat bench_output.txt
+          grep "^test " bench_output.txt
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: cargo
+          output-file-path: bevy-server/bench_output.txt
+          alert-threshold: '130%'
+          fail-on-alert: true
+          comment-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
 
   # ==========================================================================
   # Docker Build Verification (Linux)
