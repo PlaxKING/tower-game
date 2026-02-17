@@ -7,7 +7,7 @@
 //! - POST /tower.EconomyService/BuyAuction
 //! - POST /tower.EconomyService/Trade
 
-use axum::{Router, Json, extract::State, routing::post};
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use super::ApiState;
@@ -120,7 +120,7 @@ async fn get_wallet(
                 honor_points: honor,
                 seasonal_currency: honor, // UE5 reads this field
             })
-        },
+        }
         Err(_) => Json(WalletResponse {
             gold: 0,
             premium_currency: 0,
@@ -137,25 +137,32 @@ async fn craft(
     // Look up recipe from LMDB
     let recipe = match state.lmdb.get_recipe(&req.recipe_id) {
         Ok(Some(r)) => r,
-        Ok(None) => return Json(CraftResponse {
-            success: false,
-            failure_reason: format!("Recipe '{}' not found", req.recipe_id),
-            crafted_item_id: String::new(),
-            mastery_xp_gained: 0.0,
-        }),
-        Err(e) => return Json(CraftResponse {
-            success: false,
-            failure_reason: e.to_string(),
-            crafted_item_id: String::new(),
-            mastery_xp_gained: 0.0,
-        }),
+        Ok(None) => {
+            return Json(CraftResponse {
+                success: false,
+                failure_reason: format!("Recipe '{}' not found", req.recipe_id),
+                crafted_item_id: String::new(),
+                mastery_xp_gained: 0.0,
+            })
+        }
+        Err(e) => {
+            return Json(CraftResponse {
+                success: false,
+                failure_reason: e.to_string(),
+                crafted_item_id: String::new(),
+                mastery_xp_gained: 0.0,
+            })
+        }
     };
 
     // Verify player has materials (simplified: check inventory via PostgreSQL)
-    let bag = state.pg.get_bag(req.player_id as i64).await.unwrap_or_default();
-    let bag_items: std::collections::HashSet<String> = bag.iter()
-        .map(|s| s.item_template_id.clone())
-        .collect();
+    let bag = state
+        .pg
+        .get_bag(req.player_id as i64)
+        .await
+        .unwrap_or_default();
+    let bag_items: std::collections::HashSet<String> =
+        bag.iter().map(|s| s.item_template_id.clone()).collect();
 
     for ingredient in &recipe.ingredients {
         if !bag_items.contains(&ingredient.item_template_id) {
@@ -170,15 +177,23 @@ async fn craft(
 
     // Add crafted item to inventory
     let crafted_id = &recipe.result_item_id;
-    match state.pg.add_item(req.player_id as i64, crafted_id, recipe.result_quantity as i32, 0).await {
+    match state
+        .pg
+        .add_item(
+            req.player_id as i64,
+            crafted_id,
+            recipe.result_quantity as i32,
+            0,
+        )
+        .await
+    {
         Ok(_) => {
             // Award mastery XP for crafting (base 50 XP per craft)
             let xp = 50i64;
-            let _ = state.pg.add_mastery_experience(
-                req.player_id as i64,
-                &recipe.profession,
-                xp,
-            ).await;
+            let _ = state
+                .pg
+                .add_mastery_experience(req.player_id as i64, &recipe.profession, xp)
+                .await;
 
             Json(CraftResponse {
                 success: true,
@@ -203,17 +218,23 @@ async fn list_auctions(
     let per_page = req.per_page.min(50).max(1) as i32;
     let offset = (req.page * req.per_page) as i32;
 
-    let rows = state.pg.get_active_auctions(per_page, offset).await
+    let rows = state
+        .pg
+        .get_active_auctions(per_page, offset)
+        .await
         .unwrap_or_default();
 
-    let entries: Vec<AuctionEntry> = rows.iter().map(|r| AuctionEntry {
-        id: r.id as u64,
-        item_template_id: r.item_template_id.clone(),
-        quantity: r.quantity as u32,
-        buyout_price: r.buyout_price as u64,
-        seller_id: r.seller_id as u64,
-        expires_at: r.expires_at.timestamp(),
-    }).collect();
+    let entries: Vec<AuctionEntry> = rows
+        .iter()
+        .map(|r| AuctionEntry {
+            id: r.id as u64,
+            item_template_id: r.item_template_id.clone(),
+            quantity: r.quantity as u32,
+            buyout_price: r.buyout_price as u64,
+            seller_id: r.seller_id as u64,
+            expires_at: r.expires_at.timestamp(),
+        })
+        .collect();
 
     let total = entries.len() as u32;
 
@@ -227,7 +248,11 @@ async fn buy_auction(
     State(state): State<ApiState>,
     Json(req): Json<AuctionBuyRequest>,
 ) -> Json<AuctionBuyResponse> {
-    match state.pg.buyout_auction(req.auction_id as i64, req.player_id as i64).await {
+    match state
+        .pg
+        .buyout_auction(req.auction_id as i64, req.player_id as i64)
+        .await
+    {
         Ok(()) => Json(AuctionBuyResponse {
             success: true,
             failure_reason: String::new(),
@@ -245,7 +270,15 @@ async fn trade(
 ) -> Json<TradeResponse> {
     // Gold trade (atomic)
     if req.gold_from_a > 0 {
-        if let Err(e) = state.pg.transfer_gold(req.player_a as i64, req.player_b as i64, req.gold_from_a as i64).await {
+        if let Err(e) = state
+            .pg
+            .transfer_gold(
+                req.player_a as i64,
+                req.player_b as i64,
+                req.gold_from_a as i64,
+            )
+            .await
+        {
             return Json(TradeResponse {
                 success: false,
                 failure_reason: e.to_string(),
@@ -253,7 +286,15 @@ async fn trade(
         }
     }
     if req.gold_from_b > 0 {
-        if let Err(e) = state.pg.transfer_gold(req.player_b as i64, req.player_a as i64, req.gold_from_b as i64).await {
+        if let Err(e) = state
+            .pg
+            .transfer_gold(
+                req.player_b as i64,
+                req.player_a as i64,
+                req.gold_from_b as i64,
+            )
+            .await
+        {
             return Json(TradeResponse {
                 success: false,
                 failure_reason: e.to_string(),

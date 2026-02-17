@@ -1,6 +1,6 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use serde::{Serialize, Deserialize};
 use tracing::{info, warn};
 
 use tower_bevy_server::wfc;
@@ -119,10 +119,14 @@ pub fn generate_floor_with_validation(
 
         info!(
             "Generated floor {} ({}x{}, {} rooms, hash={:02x}{:02x}{:02x}{:02x}...)",
-            request.floor_id, layout.width, layout.height,
+            request.floor_id,
+            layout.width,
+            layout.height,
             layout.rooms.len(),
-            packet.validation_hash[0], packet.validation_hash[1],
-            packet.validation_hash[2], packet.validation_hash[3],
+            packet.validation_hash[0],
+            packet.validation_hash[1],
+            packet.validation_hash[2],
+            packet.validation_hash[3],
         );
 
         // Cache the packet for future validation
@@ -146,8 +150,10 @@ pub fn validate_client_floors(
         if let Some(server_packet) = cache.packets.get(&floor_id) {
             match server_packet.validate(&submission.layout) {
                 ValidationResult::Valid => {
-                    info!("Floor {} validated OK (client gen {}ms)",
-                          floor_id, submission.generation_time_ms);
+                    info!(
+                        "Floor {} validated OK (client gen {}ms)",
+                        floor_id, submission.generation_time_ms
+                    );
                     commands.entity(entity).insert(ValidatedFloor {
                         floor_id,
                         validation_time: time.elapsed_secs_f64(),

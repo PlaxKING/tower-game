@@ -6,7 +6,7 @@ use std::time::Duration;
 pub struct DynamicScaling {
     // Performance metrics
     pub current_tick_time: Duration,
-    pub target_tick_time: Duration,  // 50ms for 20 Hz
+    pub target_tick_time: Duration, // 50ms for 20 Hz
     pub avg_tick_time: Duration,
 
     // Player distribution
@@ -41,14 +41,17 @@ impl Default for DynamicScaling {
 impl DynamicScaling {
     /// Adjust capacity based on server performance
     pub fn update_capacity(&mut self) {
-        let performance_ratio = self.avg_tick_time.as_secs_f32()
-                              / self.target_tick_time.as_secs_f32();
+        let performance_ratio =
+            self.avg_tick_time.as_secs_f32() / self.target_tick_time.as_secs_f32();
 
         match performance_ratio {
             // Server running smoothly - increase capacity
             r if r < 0.7 => {
                 self.current_floor_capacity = (self.max_players_per_floor * 120 / 100).min(150);
-                info!("📈 Performance good, increasing capacity to {}", self.current_floor_capacity);
+                info!(
+                    "📈 Performance good, increasing capacity to {}",
+                    self.current_floor_capacity
+                );
             }
 
             // Server normal - maintain
@@ -59,13 +62,19 @@ impl DynamicScaling {
             // Server struggling - reduce capacity
             r if r < 1.2 => {
                 self.current_floor_capacity = self.max_players_per_floor * 80 / 100;
-                warn!("⚠️ Performance degraded, reducing capacity to {}", self.current_floor_capacity);
+                warn!(
+                    "⚠️ Performance degraded, reducing capacity to {}",
+                    self.current_floor_capacity
+                );
             }
 
             // Server overloaded - emergency reduction
             _ => {
                 self.current_floor_capacity = self.max_players_per_floor * 60 / 100;
-                error!("🚨 Server overloaded! Emergency capacity reduction to {}", self.current_floor_capacity);
+                error!(
+                    "🚨 Server overloaded! Emergency capacity reduction to {}",
+                    self.current_floor_capacity
+                );
             }
         }
     }
@@ -85,10 +94,15 @@ impl DynamicScaling {
 
         // Find nearby floor with space
         for offset in 1..10 {
-            for floor in [preferred_floor + offset, preferred_floor.saturating_sub(offset)] {
+            for floor in [
+                preferred_floor + offset,
+                preferred_floor.saturating_sub(offset),
+            ] {
                 if self.can_join_floor(floor) {
-                    info!("🔀 Redirecting player from floor {} to {} (load balancing)",
-                          preferred_floor, floor);
+                    info!(
+                        "🔀 Redirecting player from floor {} to {} (load balancing)",
+                        preferred_floor, floor
+                    );
                     return floor;
                 }
             }
@@ -110,14 +124,16 @@ pub fn monitor_performance_system(
 
     // Exponential moving average (smoothing)
     scaling.avg_tick_time = Duration::from_secs_f32(
-        0.9 * scaling.avg_tick_time.as_secs_f32()
-        + 0.1 * scaling.current_tick_time.as_secs_f32()
+        0.9 * scaling.avg_tick_time.as_secs_f32() + 0.1 * scaling.current_tick_time.as_secs_f32(),
     );
 
     // Count players per floor
     scaling.players_per_floor.clear();
     for player in &players {
-        *scaling.players_per_floor.entry(player.current_floor).or_insert(0) += 1;
+        *scaling
+            .players_per_floor
+            .entry(player.current_floor)
+            .or_insert(0) += 1;
     }
     scaling.total_players = players.iter().count();
 
@@ -129,5 +145,5 @@ pub fn monitor_performance_system(
     }
 }
 
-use std::collections::HashMap;
 use super::Player;
+use std::collections::HashMap;

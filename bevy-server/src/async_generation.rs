@@ -23,7 +23,9 @@
 //! ```
 
 use crate::lmdb_cache::LmdbFloorCache;
-use crate::proto::tower::game::{ChunkData, FloorTileData, Vec3, SemanticTags as ProtoSemanticTags, TagPair};
+use crate::proto::tower::game::{
+    ChunkData, FloorTileData, SemanticTags as ProtoSemanticTags, TagPair, Vec3,
+};
 use crate::semantic_tags::SemanticTags;
 use crate::wfc;
 use lru::LruCache;
@@ -64,9 +66,9 @@ impl Default for GenerationConfig {
             floor_size: 50,
             enable_warmup: true,
             warmup_count: 10,
-            enable_lmdb: true,  // Enable Tier 2 cache by default
+            enable_lmdb: true, // Enable Tier 2 cache by default
             lmdb_path: Some("./data/floor_cache".to_string()),
-            lmdb_size: 100 * 1024 * 1024,  // 100MB
+            lmdb_size: 100 * 1024 * 1024, // 100MB
         }
     }
 }
@@ -107,19 +109,23 @@ impl FloorGenerator {
         // Initialize LMDB Tier 2 cache (if enabled)
         let lmdb_cache = if config.enable_lmdb {
             match config.lmdb_path.as_ref() {
-                Some(path) => {
-                    match LmdbFloorCache::new(path, config.lmdb_size) {
-                        Ok(lmdb) => {
-                            info!("✅ LMDB Tier 2 cache enabled at {} ({}MB)",
-                                  path, config.lmdb_size / (1024 * 1024));
-                            Some(Arc::new(lmdb))
-                        }
-                        Err(e) => {
-                            warn!("Failed to initialize LMDB cache: {:?}, falling back to 2-tier", e);
-                            None
-                        }
+                Some(path) => match LmdbFloorCache::new(path, config.lmdb_size) {
+                    Ok(lmdb) => {
+                        info!(
+                            "✅ LMDB Tier 2 cache enabled at {} ({}MB)",
+                            path,
+                            config.lmdb_size / (1024 * 1024)
+                        );
+                        Some(Arc::new(lmdb))
                     }
-                }
+                    Err(e) => {
+                        warn!(
+                            "Failed to initialize LMDB cache: {:?}, falling back to 2-tier",
+                            e
+                        );
+                        None
+                    }
+                },
                 None => None,
             }
         } else {
@@ -138,8 +144,13 @@ impl FloorGenerator {
 
         info!(
             "FloorGenerator initialized: {} workers, {} LRU capacity, LMDB: {}",
-            config.worker_threads, config.cache_capacity,
-            if lmdb_cache.is_some() { "enabled" } else { "disabled" }
+            config.worker_threads,
+            config.cache_capacity,
+            if lmdb_cache.is_some() {
+                "enabled"
+            } else {
+                "disabled"
+            }
         );
 
         Self {
@@ -180,7 +191,10 @@ impl FloorGenerator {
             }
 
             // Tier 3: Generate floor (CPU)
-            debug!("Worker Tier 3 MISS for floor {}, generating...", req.floor_id);
+            debug!(
+                "Worker Tier 3 MISS for floor {}, generating...",
+                req.floor_id
+            );
             let chunk = Self::generate_floor_sync(req.floor_id, req.seed, &config);
 
             // Store in Tier 1 cache
@@ -259,13 +273,13 @@ impl FloorGenerator {
     /// Determine biome based on floor level
     fn determine_biome(floor_id: u32) -> u32 {
         match floor_id {
-            0..=100 => 1,     // Plains
-            101..=200 => 2,   // Forest
-            201..=300 => 3,   // Desert
-            301..=500 => 4,   // Mountains
-            501..=700 => 5,   // Ice
-            701..=900 => 6,   // Volcano
-            _ => 7,           // Void/Endgame
+            0..=100 => 1,   // Plains
+            101..=200 => 2, // Forest
+            201..=300 => 3, // Desert
+            301..=500 => 4, // Mountains
+            501..=700 => 5, // Ice
+            701..=900 => 6, // Volcano
+            _ => 7,         // Void/Endgame
         }
     }
 
@@ -342,7 +356,7 @@ impl FloorGenerator {
         // Add progression-based tags (tower depth = difficulty + corruption)
         let progression = (floor_id as f32 / 1000.0).min(1.0);
         tags.add("difficulty", 0.3 + progression * 0.7); // 0.3 -> 1.0
-        tags.add("corruption", progression * 0.8);       // 0.0 -> 0.8
+        tags.add("corruption", progression * 0.8); // 0.0 -> 0.8
 
         // Add deterministic random "flavor" tags from seed
         let rng_state = seed.wrapping_add(floor_id as u64);
@@ -351,9 +365,9 @@ impl FloorGenerator {
         if rand_val > 0.8 {
             tags.add("treasure", 0.7); // 20% chance for treasure-rich floors
         } else if rand_val > 0.6 {
-            tags.add("combat", 0.8);   // 20% chance for combat-heavy floors
+            tags.add("combat", 0.8); // 20% chance for combat-heavy floors
         } else if rand_val > 0.4 {
-            tags.add("puzzle", 0.6);   // 20% chance for puzzle floors
+            tags.add("puzzle", 0.6); // 20% chance for puzzle floors
         }
 
         tags
@@ -412,7 +426,10 @@ impl FloorGenerator {
         }
 
         self.metrics_tier3_gens.fetch_add(1, Ordering::Relaxed);
-        debug!("Tier 1+2 MISS for floor {}, requesting generation (~569µs)", floor_id);
+        debug!(
+            "Tier 1+2 MISS for floor {}, requesting generation (~569µs)",
+            floor_id
+        );
 
         // Tier 3: Request generation from worker pool
         let (response_tx, response_rx) = tokio::sync::oneshot::channel();
@@ -696,18 +713,19 @@ mod tests {
     #[tokio::test]
     async fn test_3tier_caching() {
         // Create temp directory for LMDB
-        let temp_dir = std::env::temp_dir().join(format!("tower_test_3tier_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("tower_test_3tier_{}", std::process::id()));
         let _ = std::fs::create_dir_all(&temp_dir);
 
         let config = GenerationConfig {
-            cache_capacity: 5,  // Small LRU to force Tier 2 usage
+            cache_capacity: 5, // Small LRU to force Tier 2 usage
             worker_threads: 2,
             floor_size: 10,
             enable_warmup: false,
             warmup_count: 0,
             enable_lmdb: true,
             lmdb_path: Some(temp_dir.to_string_lossy().to_string()),
-            lmdb_size: 10 * 1024 * 1024,  // 10MB
+            lmdb_size: 10 * 1024 * 1024, // 10MB
         };
 
         let generator = FloorGenerator::new(config);
@@ -738,7 +756,10 @@ mod tests {
         let stats = generator.cache_stats();
 
         // Tier 2 should have caught the request (floor 1 evicted from Tier 1)
-        assert!(stats.tier2_hits > 0, "Tier 2 should have hits after LRU eviction");
+        assert!(
+            stats.tier2_hits > 0,
+            "Tier 2 should have hits after LRU eviction"
+        );
         assert_eq!(chunk1.validation_hash, chunk3.validation_hash);
 
         // Verify metrics consistency
@@ -749,9 +770,18 @@ mod tests {
         );
 
         // Verify hit rates
-        assert!(stats.overall_hit_rate() > 0.0, "Overall hit rate should be > 0%");
-        assert!(stats.tier1_hit_rate() >= 0.0, "Tier 1 hit rate should be >= 0%");
-        assert!(stats.tier2_hit_rate() > 0.0, "Tier 2 hit rate should be > 0%");
+        assert!(
+            stats.overall_hit_rate() > 0.0,
+            "Overall hit rate should be > 0%"
+        );
+        assert!(
+            stats.tier1_hit_rate() >= 0.0,
+            "Tier 1 hit rate should be >= 0%"
+        );
+        assert!(
+            stats.tier2_hit_rate() > 0.0,
+            "Tier 2 hit rate should be > 0%"
+        );
 
         // Print summary for verification
         println!("\n{}", stats.summary());
@@ -768,7 +798,7 @@ mod tests {
             floor_size: 10,
             enable_warmup: false,
             warmup_count: 0,
-            enable_lmdb: false,  // Disable LMDB for 2-tier test
+            enable_lmdb: false, // Disable LMDB for 2-tier test
             lmdb_path: None,
             lmdb_size: 0,
         };
@@ -790,14 +820,25 @@ mod tests {
 
         // Verify metrics
         assert_eq!(stats.tier1_hits, 5, "Should have 5 Tier 1 hits");
-        assert_eq!(stats.tier2_hits, 0, "LMDB disabled, should have 0 Tier 2 hits");
+        assert_eq!(
+            stats.tier2_hits, 0,
+            "LMDB disabled, should have 0 Tier 2 hits"
+        );
         assert_eq!(stats.tier3_gens, 5, "Should have 5 generations");
         assert_eq!(stats.total_requests, 10, "Total 10 requests");
         assert!(!stats.lmdb_enabled, "LMDB should be disabled");
 
         // Verify hit rate calculations
-        assert_eq!(stats.tier1_hit_rate(), 50.0, "Tier 1 hit rate should be 50%");
-        assert_eq!(stats.overall_hit_rate(), 50.0, "Overall hit rate should be 50%");
+        assert_eq!(
+            stats.tier1_hit_rate(),
+            50.0,
+            "Tier 1 hit rate should be 50%"
+        );
+        assert_eq!(
+            stats.overall_hit_rate(),
+            50.0,
+            "Overall hit rate should be 50%"
+        );
         assert_eq!(stats.miss_rate(), 50.0, "Miss rate should be 50%");
 
         println!("\n{}", stats.summary());

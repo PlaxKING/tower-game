@@ -17,7 +17,7 @@
 //! Drop notification → client
 //! ```
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -91,13 +91,21 @@ impl Rarity {
     /// Roll a rarity from a 0.0–1.0 normalized value with luck bonus
     pub fn from_roll(roll: f32, luck_bonus: f32, floor_bonus: f32) -> Self {
         let adjusted = roll - luck_bonus * 0.1 - floor_bonus * 0.05;
-        if adjusted < 0.0005 { Rarity::Ancient }
-        else if adjusted < 0.003 { Rarity::Mythic }
-        else if adjusted < 0.015 { Rarity::Legendary }
-        else if adjusted < 0.06 { Rarity::Epic }
-        else if adjusted < 0.18 { Rarity::Rare }
-        else if adjusted < 0.45 { Rarity::Uncommon }
-        else { Rarity::Common }
+        if adjusted < 0.0005 {
+            Rarity::Ancient
+        } else if adjusted < 0.003 {
+            Rarity::Mythic
+        } else if adjusted < 0.015 {
+            Rarity::Legendary
+        } else if adjusted < 0.06 {
+            Rarity::Epic
+        } else if adjusted < 0.18 {
+            Rarity::Rare
+        } else if adjusted < 0.45 {
+            Rarity::Uncommon
+        } else {
+            Rarity::Common
+        }
     }
 }
 
@@ -158,7 +166,11 @@ impl EffectTrigger {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EffectAction {
     /// Deal bonus elemental damage
-    ElementalDamage { element: String, amount: f32, is_percent: bool },
+    ElementalDamage {
+        element: String,
+        amount: f32,
+        is_percent: bool,
+    },
     /// Heal self
     Heal { amount: f32, is_percent: bool },
     /// Lifesteal (heal % of damage dealt)
@@ -166,13 +178,25 @@ pub enum EffectAction {
     /// Temporary shield
     Shield { amount: f32, duration_secs: f32 },
     /// Buff a stat
-    BuffStat { stat: String, amount: f32, duration_secs: f32 },
+    BuffStat {
+        stat: String,
+        amount: f32,
+        duration_secs: f32,
+    },
     /// Restore energy resource
     RestoreEnergy { energy_type: String, amount: f32 },
     /// Area of effect damage around self
-    AoeDamage { element: String, damage: f32, radius: f32 },
+    AoeDamage {
+        element: String,
+        damage: f32,
+        radius: f32,
+    },
     /// Apply a debuff to target
-    Debuff { debuff_id: String, duration_secs: f32, value: f32 },
+    Debuff {
+        debuff_id: String,
+        duration_secs: f32,
+        value: f32,
+    },
 }
 
 impl EffectAction {
@@ -251,7 +275,11 @@ impl EffectAction {
     /// Description for UI tooltip
     pub fn description(&self) -> String {
         match self {
-            EffectAction::ElementalDamage { element, amount, is_percent } => {
+            EffectAction::ElementalDamage {
+                element,
+                amount,
+                is_percent,
+            } => {
                 if *is_percent {
                     format!("Deal {:.0}% {element} damage", amount)
                 } else {
@@ -268,19 +296,37 @@ impl EffectAction {
             EffectAction::Lifesteal { percent } => {
                 format!("Lifesteal {percent:.0}%")
             }
-            EffectAction::Shield { amount, duration_secs } => {
+            EffectAction::Shield {
+                amount,
+                duration_secs,
+            } => {
                 format!("Shield {amount:.0} HP for {duration_secs:.1}s")
             }
-            EffectAction::BuffStat { stat, amount, duration_secs } => {
+            EffectAction::BuffStat {
+                stat,
+                amount,
+                duration_secs,
+            } => {
                 format!("+{amount:.0} {stat} for {duration_secs:.0}s")
             }
-            EffectAction::RestoreEnergy { energy_type, amount } => {
+            EffectAction::RestoreEnergy {
+                energy_type,
+                amount,
+            } => {
                 format!("Restore {amount:.0} {energy_type} energy")
             }
-            EffectAction::AoeDamage { element, damage, radius } => {
+            EffectAction::AoeDamage {
+                element,
+                damage,
+                radius,
+            } => {
                 format!("AoE {damage:.0} {element} damage ({radius:.0}m)")
             }
-            EffectAction::Debuff { debuff_id, duration_secs, value } => {
+            EffectAction::Debuff {
+                debuff_id,
+                duration_secs,
+                value,
+            } => {
                 format!("Apply {debuff_id} ({value:.0}) for {duration_secs:.0}s")
             }
         }
@@ -332,7 +378,12 @@ impl EquipmentEffect {
             _ => 3.0 + ((h3 >> 16) % 5) as f32, // 3-7 second cooldown
         };
 
-        EquipmentEffect { trigger, action, chance, cooldown_secs }
+        EquipmentEffect {
+            trigger,
+            action,
+            chance,
+            cooldown_secs,
+        }
     }
 
     /// Full description for tooltip
@@ -349,7 +400,13 @@ impl EquipmentEffect {
             String::new()
         };
 
-        format!("{}: {}{}{}", self.trigger.display_name(), chance_str, self.action.description(), cd_str)
+        format!(
+            "{}: {}{}{}",
+            self.trigger.display_name(),
+            chance_str,
+            self.action.description(),
+            cd_str
+        )
     }
 }
 
@@ -404,7 +461,9 @@ pub fn generate_loot(seed: u64, config: &LootConfig) -> Vec<LootDrop> {
     let total_drops = (base_drops + tier_bonus).min(6);
 
     for i in 0..total_drops {
-        h = h.wrapping_mul(6364136223846793005).wrapping_add(i as u64 + 1);
+        h = h
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(i as u64 + 1);
 
         // Roll rarity
         let rarity_roll = ((h >> 32) as u32) as f32 / u32::MAX as f32;
@@ -413,7 +472,8 @@ pub fn generate_loot(seed: u64, config: &LootConfig) -> Vec<LootDrop> {
 
         // Determine item category based on monster tags
         h = h.wrapping_mul(6364136223846793005).wrapping_add(1);
-        let (item_id, display_name, is_gear) = select_item_from_tags(h, &config.monster_tags, rarity);
+        let (item_id, display_name, is_gear) =
+            select_item_from_tags(h, &config.monster_tags, rarity);
 
         // Quantity (materials get more, gear always 1)
         let quantity = if is_gear {
@@ -454,7 +514,9 @@ pub fn generate_loot(seed: u64, config: &LootConfig) -> Vec<LootDrop> {
         let gold_value = (base_gold as f32 * rarity.stat_mult()) as u32;
 
         // Semantic tags that influenced drop
-        let semantic_source: Vec<(String, f32)> = config.monster_tags.iter()
+        let semantic_source: Vec<(String, f32)> = config
+            .monster_tags
+            .iter()
             .filter(|(_, w)| **w > 0.3)
             .map(|(k, v)| (k.clone(), *v))
             .collect();
@@ -478,7 +540,11 @@ pub fn generate_loot(seed: u64, config: &LootConfig) -> Vec<LootDrop> {
         if bonus_roll < config.semantic_affinity - 0.5 {
             // Bonus semantic drop — always at least Rare
             let rarity = Rarity::from_roll(0.0, config.luck + 0.5, config.floor_id as f32 / 50.0);
-            let rarity = if rarity < Rarity::Rare { Rarity::Rare } else { rarity };
+            let rarity = if rarity < Rarity::Rare {
+                Rarity::Rare
+            } else {
+                rarity
+            };
 
             h = h.wrapping_mul(6364136223846793005).wrapping_add(1);
             let (item_id, display_name, _) = select_item_from_tags(h, &config.monster_tags, rarity);
@@ -490,7 +556,9 @@ pub fn generate_loot(seed: u64, config: &LootConfig) -> Vec<LootDrop> {
                 rarity,
                 effects: vec![EquipmentEffect::from_seed(h, rarity)],
                 sockets: 1,
-                semantic_source: config.monster_tags.iter()
+                semantic_source: config
+                    .monster_tags
+                    .iter()
                     .map(|(k, v)| (k.clone(), *v))
                     .collect(),
                 gold_value: (50 * config.loot_tier) as u32,
@@ -508,7 +576,8 @@ fn select_item_from_tags(
     rarity: Rarity,
 ) -> (String, String, bool) {
     // Determine primary element/theme from tags
-    let primary = tags.iter()
+    let primary = tags
+        .iter()
         .filter(|(k, _)| !matches!(k.as_str(), "aggression" | "presence" | "corruption"))
         .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
         .map(|(k, _)| k.as_str())
@@ -657,9 +726,7 @@ mod tests {
             luck: 0.5,
             semantic_affinity: 0.3,
             loot_tier: 2,
-            monster_tags: HashMap::from([
-                ("earth".to_string(), 0.7),
-            ]),
+            monster_tags: HashMap::from([("earth".to_string(), 0.7)]),
         };
 
         let drops1 = generate_loot(12345, &config);
@@ -707,10 +774,7 @@ mod tests {
             luck: 0.0,
             semantic_affinity: 0.9, // High affinity
             loot_tier: 3,
-            monster_tags: HashMap::from([
-                ("fire".to_string(), 0.9),
-                ("volcanic".to_string(), 0.7),
-            ]),
+            monster_tags: HashMap::from([("fire".to_string(), 0.9), ("volcanic".to_string(), 0.7)]),
         };
 
         // With high semantic affinity, some seeds should produce bonus drops
@@ -724,7 +788,10 @@ mod tests {
                 }
             }
         }
-        assert!(found_semantic, "Should find at least one semantic bonus drop in 100 seeds");
+        assert!(
+            found_semantic,
+            "Should find at least one semantic bonus drop in 100 seeds"
+        );
     }
 
     #[test]
@@ -734,9 +801,7 @@ mod tests {
             luck: 5.0, // Very lucky
             semantic_affinity: 0.0,
             loot_tier: 5,
-            monster_tags: HashMap::from([
-                ("void".to_string(), 0.9),
-            ]),
+            monster_tags: HashMap::from([("void".to_string(), 0.9)]),
         };
 
         // Find gear drops and check effects
@@ -766,9 +831,7 @@ mod tests {
             luck: 0.0,
             semantic_affinity: 0.0,
             loot_tier: 1,
-            monster_tags: HashMap::from([
-                ("fire".to_string(), 0.9),
-            ]),
+            monster_tags: HashMap::from([("fire".to_string(), 0.9)]),
         };
 
         let mut found_fire = false;

@@ -18,7 +18,7 @@
 //! ```
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -28,12 +28,12 @@ use std::collections::HashMap;
 /// Material type affects damage resistance and fracture behavior
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DestructionMaterial {
-    Wood,       // Low HP, splinter fracture, weak to fire
-    Stone,      // Medium HP, chunk fracture, weak to explosive
-    Metal,      // High HP, deformation, weak to lightning
-    Crystal,    // Medium HP, Voronoi shatter, weak to kinetic
-    Ice,        // Low HP, shatter + melt VFX, weak to fire
-    Organic,    // Trees/vines — snap + ragdoll, weak to fire
+    Wood,    // Low HP, splinter fracture, weak to fire
+    Stone,   // Medium HP, chunk fracture, weak to explosive
+    Metal,   // High HP, deformation, weak to lightning
+    Crystal, // Medium HP, Voronoi shatter, weak to kinetic
+    Ice,     // Low HP, shatter + melt VFX, weak to fire
+    Organic, // Trees/vines — snap + ragdoll, weak to fire
 }
 
 impl DestructionMaterial {
@@ -90,12 +90,12 @@ impl DestructionMaterial {
 /// Damage type for destruction interactions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DestructionDamageType {
-    Kinetic,           // Physical impact
-    Explosive,         // Radius damage
+    Kinetic,   // Physical impact
+    Explosive, // Radius damage
     ElementalFire,
     ElementalIce,
     ElementalLightning,
-    Semantic,          // Tower corruption damage
+    Semantic, // Tower corruption damage
 }
 
 /// Single fragment within a destructible object
@@ -222,7 +222,11 @@ impl Destructible {
             // AoE damage hits all within radius with falloff
             let damage_factor = if radius <= 0.0 {
                 // Point damage: full damage to closest non-destroyed fragment
-                if distance < 2.0 { 1.0 } else { 0.0 }
+                if distance < 2.0 {
+                    1.0
+                } else {
+                    0.0
+                }
             } else {
                 // AoE: linear falloff within radius
                 if distance <= radius {
@@ -279,7 +283,9 @@ impl Destructible {
         let mut collapsed_ids = Vec::new();
 
         // Find destroyed fragments that support others
-        let support_map: Vec<(u8, Vec<u8>)> = self.fragments.iter()
+        let support_map: Vec<(u8, Vec<u8>)> = self
+            .fragments
+            .iter()
             .filter(|f| f.destroyed)
             .map(|f| (f.cluster_id, f.supports.clone()))
             .collect();
@@ -407,7 +413,11 @@ pub fn default_templates() -> Vec<DestructibleTemplate> {
             respawn_time_secs: None,
             loot_table_id: Some("loot_stone_debris".into()),
             category: DestructibleCategory::Pillar,
-            semantic_tags: vec![("structure".into(), 1.0), ("stone".into(), 0.8), ("load_bearing".into(), 1.0)],
+            semantic_tags: vec![
+                ("structure".into(), 1.0),
+                ("stone".into(), 0.8),
+                ("load_bearing".into(), 1.0),
+            ],
         },
         DestructibleTemplate {
             id: "tree_forest".into(),
@@ -419,7 +429,11 @@ pub fn default_templates() -> Vec<DestructibleTemplate> {
             respawn_time_secs: Some(300.0), // 5 min respawn
             loot_table_id: Some("loot_wood_harvest".into()),
             category: DestructibleCategory::Tree,
-            semantic_tags: vec![("nature".into(), 0.9), ("wood".into(), 0.7), ("organic".into(), 0.8)],
+            semantic_tags: vec![
+                ("nature".into(), 0.9),
+                ("wood".into(), 0.7),
+                ("organic".into(), 0.8),
+            ],
         },
         DestructibleTemplate {
             id: "tree_corrupted".into(),
@@ -431,7 +445,11 @@ pub fn default_templates() -> Vec<DestructibleTemplate> {
             respawn_time_secs: Some(600.0), // 10 min
             loot_table_id: Some("loot_corruption_harvest".into()),
             category: DestructibleCategory::Tree,
-            semantic_tags: vec![("corruption".into(), 0.9), ("organic".into(), 0.6), ("dark_energy".into(), 0.7)],
+            semantic_tags: vec![
+                ("corruption".into(), 0.9),
+                ("organic".into(), 0.6),
+                ("dark_energy".into(), 0.7),
+            ],
         },
         DestructibleTemplate {
             id: "crate_wooden".into(),
@@ -467,7 +485,11 @@ pub fn default_templates() -> Vec<DestructibleTemplate> {
             respawn_time_secs: None, // Permanent destruction
             loot_table_id: Some("loot_crystal_shards".into()),
             category: DestructibleCategory::Crystal,
-            semantic_tags: vec![("crystal".into(), 1.0), ("elemental".into(), 0.7), ("rare_resource".into(), 0.5)],
+            semantic_tags: vec![
+                ("crystal".into(), 1.0),
+                ("elemental".into(), 0.7),
+                ("rare_resource".into(), 0.5),
+            ],
         },
         DestructibleTemplate {
             id: "bridge_wood_section".into(),
@@ -479,7 +501,11 @@ pub fn default_templates() -> Vec<DestructibleTemplate> {
             respawn_time_secs: None,
             loot_table_id: Some("loot_wood_debris".into()),
             category: DestructibleCategory::Bridge,
-            semantic_tags: vec![("structure".into(), 0.8), ("wood".into(), 0.9), ("traversal".into(), 1.0)],
+            semantic_tags: vec![
+                ("structure".into(), 0.8),
+                ("wood".into(), 0.9),
+                ("traversal".into(), 1.0),
+            ],
         },
         DestructibleTemplate {
             id: "corruption_node".into(),
@@ -491,7 +517,11 @@ pub fn default_templates() -> Vec<DestructibleTemplate> {
             respawn_time_secs: Some(900.0), // 15 min
             loot_table_id: Some("loot_corruption_essence".into()),
             category: DestructibleCategory::Corruption,
-            semantic_tags: vec![("corruption".into(), 1.0), ("dark_energy".into(), 0.9), ("tower_anomaly".into(), 0.8)],
+            semantic_tags: vec![
+                ("corruption".into(), 1.0),
+                ("dark_energy".into(), 0.9),
+                ("tower_anomaly".into(), 0.8),
+            ],
         },
     ]
 }
@@ -523,12 +553,7 @@ impl FloorDestructionManager {
     }
 
     /// Spawn a destructible from template
-    pub fn spawn(
-        &mut self,
-        template_id: &str,
-        floor_id: u32,
-        _position: Vec3,
-    ) -> Option<u64> {
+    pub fn spawn(&mut self, template_id: &str, floor_id: u32, _position: Vec3) -> Option<u64> {
         let template = self.templates.get(template_id)?;
 
         let entity_id = self.next_entity_id;
@@ -581,7 +606,11 @@ impl FloorDestructionManager {
 
         let total = floor.len() as u32;
         let destroyed = floor.values().filter(|d| d.collapsed).count() as u32;
-        let percentage = if total > 0 { destroyed as f32 / total as f32 } else { 0.0 };
+        let percentage = if total > 0 {
+            destroyed as f32 / total as f32
+        } else {
+            0.0
+        };
 
         (total, destroyed, percentage)
     }
@@ -655,11 +684,8 @@ fn distribute_fragment_positions(destructible: &mut Destructible, category: &Des
             for (i, frag) in destructible.fragments.iter_mut().enumerate() {
                 let angle = (i as f32 / count as f32) * std::f32::consts::TAU;
                 let dist = (i as f32 + 1.0) * 0.5;
-                frag.position_offset = Vec3::new(
-                    angle.cos() * dist,
-                    (i as f32) * 0.3,
-                    angle.sin() * dist,
-                );
+                frag.position_offset =
+                    Vec3::new(angle.cos() * dist, (i as f32) * 0.3, angle.sin() * dist);
             }
         }
     }
@@ -699,10 +725,7 @@ pub fn process_destruction_events(
 }
 
 /// System: Handle respawning of destroyed destructibles
-pub fn respawn_destructibles(
-    mut manager: ResMut<FloorDestructionManager>,
-    time: Res<Time>,
-) {
+pub fn respawn_destructibles(mut manager: ResMut<FloorDestructionManager>, time: Res<Time>) {
     let dt = time.delta_secs();
 
     for floor in manager.floors.values_mut() {
@@ -772,13 +795,25 @@ mod tests {
     #[test]
     fn test_material_damage_modifiers() {
         // Wood is weak to fire
-        assert_eq!(DestructionMaterial::Wood.damage_modifier(DestructionDamageType::ElementalFire), 2.0);
+        assert_eq!(
+            DestructionMaterial::Wood.damage_modifier(DestructionDamageType::ElementalFire),
+            2.0
+        );
         // Stone is resistant to kinetic
-        assert_eq!(DestructionMaterial::Stone.damage_modifier(DestructionDamageType::Kinetic), 0.6);
+        assert_eq!(
+            DestructionMaterial::Stone.damage_modifier(DestructionDamageType::Kinetic),
+            0.6
+        );
         // Metal conducts lightning
-        assert_eq!(DestructionMaterial::Metal.damage_modifier(DestructionDamageType::ElementalLightning), 2.0);
+        assert_eq!(
+            DestructionMaterial::Metal.damage_modifier(DestructionDamageType::ElementalLightning),
+            2.0
+        );
         // Ice is immune to ice
-        assert_eq!(DestructionMaterial::Ice.damage_modifier(DestructionDamageType::ElementalIce), 0.0);
+        assert_eq!(
+            DestructionMaterial::Ice.damage_modifier(DestructionDamageType::ElementalIce),
+            0.0
+        );
     }
 
     #[test]
@@ -788,10 +823,10 @@ mod tests {
         d.fragments[0].position_offset = Vec3::ZERO;
 
         let result = d.apply_damage(
-            Vec3::ZERO,       // impact at origin
-            Vec3::ZERO,       // entity at origin
-            100.0,            // damage
-            0.0,              // point damage
+            Vec3::ZERO, // impact at origin
+            Vec3::ZERO, // entity at origin
+            100.0,      // damage
+            0.0,        // point damage
             DestructionDamageType::Kinetic,
         );
 
@@ -852,8 +887,10 @@ mod tests {
         wood.fragments[0].position_offset = Vec3::ZERO;
 
         let fire_result = wood.apply_damage(
-            Vec3::ZERO, Vec3::ZERO,
-            50.0, 0.0,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            50.0,
+            0.0,
             DestructionDamageType::ElementalFire,
         );
 
@@ -861,8 +898,10 @@ mod tests {
         wood2.fragments[0].position_offset = Vec3::ZERO;
 
         let kinetic_result = wood2.apply_damage(
-            Vec3::ZERO, Vec3::ZERO,
-            50.0, 0.0,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            50.0,
+            0.0,
             DestructionDamageType::Kinetic,
         );
 
@@ -899,9 +938,15 @@ mod tests {
         let mut manager = FloorDestructionManager::new();
 
         // Spawn destructibles on floor 1
-        let id1 = manager.spawn("wall_stone_3m", 1, Vec3::new(0.0, 0.0, 0.0)).unwrap();
-        let id2 = manager.spawn("crate_wooden", 1, Vec3::new(5.0, 0.0, 0.0)).unwrap();
-        let _id3 = manager.spawn("tree_forest", 1, Vec3::new(10.0, 0.0, 0.0)).unwrap();
+        let id1 = manager
+            .spawn("wall_stone_3m", 1, Vec3::new(0.0, 0.0, 0.0))
+            .unwrap();
+        let id2 = manager
+            .spawn("crate_wooden", 1, Vec3::new(5.0, 0.0, 0.0))
+            .unwrap();
+        let _id3 = manager
+            .spawn("tree_forest", 1, Vec3::new(10.0, 0.0, 0.0))
+            .unwrap();
 
         assert_ne!(id1, id2);
 
@@ -911,14 +956,17 @@ mod tests {
         assert_eq!(pct, 0.0);
 
         // Destroy the crate (low HP)
-        let result = manager.apply_damage(
-            id2, 1,
-            Vec3::new(5.0, 0.5, 0.0),
-            Vec3::new(5.0, 0.0, 0.0),
-            10000.0, // Overkill
-            5.0,
-            DestructionDamageType::Explosive,
-        ).unwrap();
+        let result = manager
+            .apply_damage(
+                id2,
+                1,
+                Vec3::new(5.0, 0.5, 0.0),
+                Vec3::new(5.0, 0.0, 0.0),
+                10000.0, // Overkill
+                5.0,
+                DestructionDamageType::Explosive,
+            )
+            .unwrap();
 
         assert!(result.structural_collapse);
 
@@ -948,8 +996,10 @@ mod tests {
         ice.fragments[0].position_offset = Vec3::ZERO;
 
         let result = ice.apply_damage(
-            Vec3::ZERO, Vec3::ZERO,
-            1000.0, 0.0,
+            Vec3::ZERO,
+            Vec3::ZERO,
+            1000.0,
+            0.0,
             DestructionDamageType::ElementalIce,
         );
 

@@ -2,7 +2,6 @@
 ///!
 ///! Provides C-compatible functions for Protobuf deserialization.
 ///! UE5 calls these functions via DLL, avoiding the need for libprotobuf.lib in UE5.
-
 use crate::proto::tower::game::ChunkData;
 use prost::Message;
 use std::ffi::{CStr, CString};

@@ -23,12 +23,12 @@
 //! that is updated every tick by a Bevy system.
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use tokio::sync::{mpsc, oneshot};
 
-use crate::components::{Player, Monster};
+use crate::components::{Monster, Player};
 
 // ============================================================================
 // Game World Snapshot (read-only, updated every tick)
@@ -114,9 +114,7 @@ pub enum GameCommand {
         reply: oneshot::Sender<DestructionCommandResult>,
     },
     /// Get live player count
-    GetPlayerCount {
-        reply: oneshot::Sender<usize>,
-    },
+    GetPlayerCount { reply: oneshot::Sender<usize> },
     /// Get live player state
     GetPlayer {
         player_id: u64,
@@ -216,14 +214,17 @@ pub fn update_world_snapshot(
 
     // Snapshot players
     for player in &players {
-        snap.players.insert(player.id, PlayerSnapshot {
-            id: player.id,
-            position: [player.position.x, player.position.y, player.position.z],
-            health: player.health,
-            max_health: 100.0, // TODO: from player stats
-            current_floor: player.current_floor,
-            in_combat: false, // TODO: from combat state
-        });
+        snap.players.insert(
+            player.id,
+            PlayerSnapshot {
+                id: player.id,
+                position: [player.position.x, player.position.y, player.position.z],
+                health: player.health,
+                max_health: 100.0, // TODO: from player stats
+                current_floor: player.current_floor,
+                in_combat: false, // TODO: from combat state
+            },
+        );
     }
     snap.entity_count += snap.players.len();
 
@@ -249,8 +250,13 @@ pub fn update_world_snapshot(
     for (&floor_id, floor) in &destruction.floors {
         let total = floor.len() as u32;
         let destroyed = floor.values().filter(|d| d.collapsed).count() as u32;
-        let pct = if total > 0 { destroyed as f32 / total as f32 } else { 0.0 };
-        snap.destruction_stats.insert(floor_id, (total, destroyed, pct));
+        let pct = if total > 0 {
+            destroyed as f32 / total as f32
+        } else {
+            0.0
+        };
+        snap.destruction_stats
+            .insert(floor_id, (total, destroyed, pct));
     }
 
     // Write snapshot (blocks readers briefly)
@@ -279,21 +285,37 @@ pub fn process_game_commands(
         processed += 1;
 
         match cmd {
-            GameCommand::MovePlayer { player_id, position, reply } => {
-                let result = if let Some((_, mut player)) = players.iter_mut()
-                    .find(|(_, p)| p.id == player_id)
+            GameCommand::MovePlayer {
+                player_id,
+                position,
+                reply,
+            } => {
+                let result = if let Some((_, mut player)) =
+                    players.iter_mut().find(|(_, p)| p.id == player_id)
                 {
                     player.position = Vec3::new(position[0], position[1], position[2]);
-                    CommandResult { success: true, message: "Moved".into() }
+                    CommandResult {
+                        success: true,
+                        message: "Moved".into(),
+                    }
                 } else {
-                    CommandResult { success: false, message: "Player not found".into() }
+                    CommandResult {
+                        success: false,
+                        message: "Player not found".into(),
+                    }
                 };
                 let _ = reply.send(result);
             }
 
-            GameCommand::DealDamage { attacker_id: _, target_id, damage, reply } => {
+            GameCommand::DealDamage {
+                attacker_id: _,
+                target_id,
+                damage,
+                reply,
+            } => {
                 // Try to find target as monster
-                let result = if let Some((_, mut monster)) = monsters.iter_mut()
+                let result = if let Some((_, mut monster)) = monsters
+                    .iter_mut()
                     .enumerate()
                     .find(|(i, _)| *i as u64 == target_id)
                     .map(|(_, m)| m)
@@ -320,22 +342,36 @@ pub fn process_game_commands(
                 let _ = reply.send(result);
             }
 
-            GameCommand::SpawnMonster { floor_id: _, monster_type, position, health, reply } => {
-                let entity = commands.spawn((
-                    Monster {
+            GameCommand::SpawnMonster {
+                floor_id: _,
+                monster_type,
+                position,
+                health,
+                reply,
+            } => {
+                let entity = commands
+                    .spawn((Monster {
                         monster_type,
                         position: Vec3::new(position[0], position[1], position[2]),
                         health,
                         max_health: health,
-                    },
-                )).id();
+                    },))
+                    .id();
                 let _ = reply.send(SpawnResult {
                     success: true,
                     entity_id: Some(entity.index() as u64),
                 });
             }
 
-            GameCommand::DestroyObject { entity_id, floor_id, impact_point, damage, radius, damage_type, reply } => {
+            GameCommand::DestroyObject {
+                entity_id,
+                floor_id,
+                impact_point,
+                damage,
+                radius,
+                damage_type,
+                reply,
+            } => {
                 let dt = match damage_type.as_str() {
                     "explosive" => crate::destruction::DestructionDamageType::Explosive,
                     "fire" => crate::destruction::DestructionDamageType::ElementalFire,
@@ -375,7 +411,8 @@ pub fn process_game_commands(
             }
 
             GameCommand::GetPlayer { player_id, reply } => {
-                let snap = players.iter()
+                let snap = players
+                    .iter()
                     .find(|(_, p)| p.id == player_id)
                     .map(|(_, p)| PlayerSnapshot {
                         id: p.id,
@@ -388,9 +425,16 @@ pub fn process_game_commands(
                 let _ = reply.send(snap);
             }
 
-            GameCommand::CombatAction { player_id, action, position: _, facing, reply } => {
+            GameCommand::CombatAction {
+                player_id,
+                action,
+                position: _,
+                facing,
+                reply,
+            } => {
                 // Find the player entity
-                let player_entity = players.iter()
+                let player_entity = players
+                    .iter()
                     .find(|(_, p)| p.id == player_id)
                     .map(|(e, _)| e);
 
@@ -402,9 +446,8 @@ pub fn process_game_commands(
                     match (combat_state, weapon) {
                         (Ok(mut cs), Ok(w)) => {
                             cs.facing = facing;
-                            let action_result = crate::combat::try_combat_action(
-                                &mut cs, action, w, &movesets,
-                            );
+                            let action_result =
+                                crate::combat::try_combat_action(&mut cs, action, w, &movesets);
                             CombatActionCommandResult {
                                 success: action_result.success,
                                 message: action_result.message.clone(),
@@ -431,10 +474,7 @@ pub fn process_game_commands(
 }
 
 /// System: Track server uptime
-pub fn update_uptime(
-    time: Res<Time>,
-    mut uptime: ResMut<ServerUptime>,
-) {
+pub fn update_uptime(time: Res<Time>, mut uptime: ResMut<ServerUptime>) {
     uptime.ticks += 1;
     uptime.total_time += time.delta_secs() as f64;
 }
@@ -449,11 +489,7 @@ pub fn create_bridge() -> (CommandSender, GameCommandReceiver, SharedWorldSnapsh
     let (tx, rx) = mpsc::unbounded_channel();
     let snapshot = Arc::new(RwLock::new(GameWorldSnapshot::default()));
 
-    (
-        tx,
-        GameCommandReceiver { receiver: rx },
-        snapshot,
-    )
+    (tx, GameCommandReceiver { receiver: rx }, snapshot)
 }
 
 // ============================================================================
@@ -485,14 +521,17 @@ mod tests {
         {
             let mut snap = snapshot.write().unwrap();
             snap.tick = 42;
-            snap.players.insert(1, PlayerSnapshot {
-                id: 1,
-                position: [10.0, 0.0, 20.0],
-                health: 80.0,
-                max_health: 100.0,
-                current_floor: 5,
-                in_combat: true,
-            });
+            snap.players.insert(
+                1,
+                PlayerSnapshot {
+                    id: 1,
+                    position: [10.0, 0.0, 20.0],
+                    health: 80.0,
+                    max_health: 100.0,
+                    current_floor: 5,
+                    in_combat: true,
+                },
+            );
         }
 
         // Read
@@ -513,7 +552,8 @@ mod tests {
 
         // Send a command
         let (reply_tx, reply_rx) = oneshot::channel();
-        tx.send(GameCommand::GetPlayerCount { reply: reply_tx }).unwrap();
+        tx.send(GameCommand::GetPlayerCount { reply: reply_tx })
+            .unwrap();
 
         // Receive on the Bevy side
         let cmd = rx.receiver.recv().await.unwrap();
@@ -538,18 +578,25 @@ mod tests {
             player_id: 42,
             position: [1.0, 2.0, 3.0],
             reply: reply_tx,
-        }).unwrap();
+        })
+        .unwrap();
 
         // Simulate Bevy processing
         let cmd = rx.receiver.recv().await.unwrap();
         match cmd {
-            GameCommand::MovePlayer { player_id, position, reply } => {
+            GameCommand::MovePlayer {
+                player_id,
+                position,
+                reply,
+            } => {
                 assert_eq!(player_id, 42);
                 assert_eq!(position, [1.0, 2.0, 3.0]);
-                reply.send(CommandResult {
-                    success: true,
-                    message: "Moved".into(),
-                }).unwrap();
+                reply
+                    .send(CommandResult {
+                        success: true,
+                        message: "Moved".into(),
+                    })
+                    .unwrap();
             }
             _ => panic!("Wrong command"),
         }

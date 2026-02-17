@@ -3,13 +3,13 @@
 //! Implements the Repository traits from `repository.rs` using LmdbTemplateStore
 //! as the backend. These adapters wrap synchronous LMDB calls in async interfaces.
 
-use async_trait::async_trait;
-use std::sync::Arc;
 use super::lmdb_templates::LmdbTemplateStore;
 use super::repository::*;
+use async_trait::async_trait;
+use std::sync::Arc;
 
-use crate::proto::tower::entities;
 use crate::proto::tower::economy;
+use crate::proto::tower::entities;
 use crate::proto::tower::quests;
 
 /// Adapter wrapping LmdbTemplateStore for MonsterTemplateRepo
@@ -62,7 +62,10 @@ impl ItemTemplateRepo for LmdbItemRepo {
 
     async fn get_by_type(&self, item_type: i32) -> RepoResult<Vec<entities::ItemTemplate>> {
         let all: Vec<entities::ItemTemplate> = self.store.get_all(self.store.items)?;
-        Ok(all.into_iter().filter(|i| i.item_type == item_type).collect())
+        Ok(all
+            .into_iter()
+            .filter(|i| i.item_type == item_type)
+            .collect())
     }
 
     async fn get_by_rarity(&self, rarity: i32) -> RepoResult<Vec<entities::ItemTemplate>> {
@@ -103,7 +106,10 @@ impl AbilityTemplateRepo for LmdbAbilityRepo {
 
     async fn get_by_domain(&self, domain: &str) -> RepoResult<Vec<entities::AbilityTemplate>> {
         let all: Vec<entities::AbilityTemplate> = self.store.get_all(self.store.abilities)?;
-        Ok(all.into_iter().filter(|a| a.required_mastery_domain == domain).collect())
+        Ok(all
+            .into_iter()
+            .filter(|a| a.required_mastery_domain == domain)
+            .collect())
     }
 
     async fn get_all(&self) -> RepoResult<Vec<entities::AbilityTemplate>> {
@@ -132,9 +138,15 @@ impl RecipeRepo for LmdbRecipeRepo {
         Ok(self.store.get_recipe(id)?)
     }
 
-    async fn get_by_profession(&self, profession: &str) -> RepoResult<Vec<economy::CraftingRecipe>> {
+    async fn get_by_profession(
+        &self,
+        profession: &str,
+    ) -> RepoResult<Vec<economy::CraftingRecipe>> {
         let all: Vec<economy::CraftingRecipe> = self.store.get_all(self.store.recipes)?;
-        Ok(all.into_iter().filter(|r| r.profession == profession).collect())
+        Ok(all
+            .into_iter()
+            .filter(|r| r.profession == profession)
+            .collect())
     }
 
     async fn get_all(&self) -> RepoResult<Vec<economy::CraftingRecipe>> {
@@ -165,12 +177,19 @@ impl QuestTemplateRepo for LmdbQuestRepo {
 
     async fn get_by_type(&self, quest_type: i32) -> RepoResult<Vec<quests::QuestTemplate>> {
         let all: Vec<quests::QuestTemplate> = self.store.get_all(self.store.quests)?;
-        Ok(all.into_iter().filter(|q| q.quest_type == quest_type).collect())
+        Ok(all
+            .into_iter()
+            .filter(|q| q.quest_type == quest_type)
+            .collect())
     }
 
-    async fn get_available_for_floor(&self, floor_id: u32) -> RepoResult<Vec<quests::QuestTemplate>> {
+    async fn get_available_for_floor(
+        &self,
+        floor_id: u32,
+    ) -> RepoResult<Vec<quests::QuestTemplate>> {
         let all: Vec<quests::QuestTemplate> = self.store.get_all(self.store.quests)?;
-        Ok(all.into_iter()
+        Ok(all
+            .into_iter()
             .filter(|q| floor_id >= q.required_floor_min)
             .collect())
     }
@@ -284,7 +303,10 @@ impl GemTemplateRepo for LmdbGemRepo {
 
     async fn get_by_socket_type(&self, socket_type: i32) -> RepoResult<Vec<entities::GemTemplate>> {
         let all: Vec<entities::GemTemplate> = self.store.get_all(self.store.gems)?;
-        Ok(all.into_iter().filter(|g| g.socket_type == socket_type).collect())
+        Ok(all
+            .into_iter()
+            .filter(|g| g.socket_type == socket_type)
+            .collect())
     }
 
     async fn get_all(&self) -> RepoResult<Vec<entities::GemTemplate>> {

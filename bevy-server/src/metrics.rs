@@ -52,7 +52,8 @@ impl ServerMetrics {
 
     pub fn record_request(&self, duration_us: u64, is_error: bool) {
         self.total_requests.fetch_add(1, Ordering::Relaxed);
-        self.total_duration_us.fetch_add(duration_us, Ordering::Relaxed);
+        self.total_duration_us
+            .fetch_add(duration_us, Ordering::Relaxed);
         if is_error {
             self.total_errors.fetch_add(1, Ordering::Relaxed);
         }
@@ -65,7 +66,11 @@ impl ServerMetrics {
     pub fn requests_per_second(&self) -> f64 {
         let total = self.total_requests.load(Ordering::Relaxed) as f64;
         let uptime = self.uptime_secs();
-        if uptime > 0.0 { total / uptime } else { 0.0 }
+        if uptime > 0.0 {
+            total / uptime
+        } else {
+            0.0
+        }
     }
 
     pub fn avg_duration_ms(&self) -> f64 {
@@ -112,7 +117,10 @@ pub async fn prometheus_handler(State(state): State<ApiState>) -> impl IntoRespo
 
     // Read game state from ECS snapshot
     let (player_count, entity_count, tick, avg_tick_ms) = {
-        let snap = state.world_snapshot.read().unwrap_or_else(|e| e.into_inner());
+        let snap = state
+            .world_snapshot
+            .read()
+            .unwrap_or_else(|e| e.into_inner());
         let players = snap.players.len();
         let entities = snap.entity_count;
         let tick = snap.tick;
@@ -200,7 +208,10 @@ pub async fn json_metrics_handler(State(state): State<ApiState>) -> Json<JsonMet
     let m = &state.metrics;
 
     let (player_count, entity_count, tick, avg_tick_ms) = {
-        let snap = state.world_snapshot.read().unwrap_or_else(|e| e.into_inner());
+        let snap = state
+            .world_snapshot
+            .read()
+            .unwrap_or_else(|e| e.into_inner());
         let avg_tick = if snap.tick > 0 {
             (snap.uptime_secs / snap.tick as f64) * 1000.0
         } else {

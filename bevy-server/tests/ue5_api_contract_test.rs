@@ -13,16 +13,16 @@
 //!
 //! Requires: `docker compose up -d postgres` (PostgreSQL on port 5433)
 
-use std::sync::Arc;
-use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
-use tower_bevy_server::storage::seed_data;
-use tower_bevy_server::ecs_bridge;
-use tower_bevy_server::api;
-use tower_bevy_server::metrics::ServerMetrics;
-use serde_json::Value;
 use axum::body::Body;
 use http::Request;
+use serde_json::Value;
+use std::sync::Arc;
 use tower::ServiceExt;
+use tower_bevy_server::api;
+use tower_bevy_server::ecs_bridge;
+use tower_bevy_server::metrics::ServerMetrics;
+use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
+use tower_bevy_server::storage::seed_data;
 
 /// Helper: create test router (same as api_smoke_test)
 async fn create_test_router() -> (axum::Router, tempfile::TempDir) {
@@ -150,10 +150,7 @@ async fn contract_calculate_damage_has_ue5_fields() {
         for m in modifiers {
             assert!(m["source"].is_string(), "Modifier missing source");
             assert!(m["multiplier"].is_number(), "Modifier missing multiplier");
-            assert!(
-                m["description"].is_string(),
-                "Modifier missing description"
-            );
+            assert!(m["description"].is_string(), "Modifier missing description");
         }
     }
 }
@@ -256,10 +253,7 @@ async fn contract_generate_loot_has_ue5_fields() {
 
     for item in items {
         // Fields that UE5 GRPCClientManager reads (lines 622-634)
-        assert!(
-            item["item_name"].is_string(),
-            "Loot item missing item_name"
-        );
+        assert!(item["item_name"].is_string(), "Loot item missing item_name");
         assert!(item["rarity"].is_number(), "Loot item missing rarity");
         assert!(
             item["socket_count"].is_number(),
@@ -302,9 +296,6 @@ async fn contract_metrics_json_has_expected_fields() {
     assert!(json["player_count"].is_number(), "Missing player_count");
     assert!(json["entity_count"].is_number(), "Missing entity_count");
     assert!(json["tick"].is_number(), "Missing tick");
-    assert!(
-        json["total_requests"].is_number(),
-        "Missing total_requests"
-    );
+    assert!(json["total_requests"].is_number(), "Missing total_requests");
     assert!(json["rps"].is_number(), "Missing rps");
 }

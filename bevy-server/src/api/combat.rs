@@ -5,7 +5,7 @@
 //! - POST /tower.CombatService/GetCombatState
 //! - POST /tower.CombatService/ProcessAction  (routes through Bevy ECS bridge)
 
-use axum::{Router, Json, extract::State, routing::post};
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use super::ApiState;
@@ -14,8 +14,14 @@ use crate::ecs_bridge::GameCommand;
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
-        .route("/tower.CombatService/CalculateDamage", post(calculate_damage))
-        .route("/tower.CombatService/GetCombatState", post(get_combat_state))
+        .route(
+            "/tower.CombatService/CalculateDamage",
+            post(calculate_damage),
+        )
+        .route(
+            "/tower.CombatService/GetCombatState",
+            post(get_combat_state),
+        )
         .route("/tower.CombatService/ProcessAction", post(process_action))
 }
 
@@ -144,11 +150,17 @@ async fn calculate_damage(
     // Look up ability damage from effects
     if !req.ability_id.is_empty() {
         if let Ok(Some(ability)) = state.lmdb.get_ability(&req.ability_id) {
-            let ability_damage: f32 = ability.effects.iter()
+            let ability_damage: f32 = ability
+                .effects
+                .iter()
                 .filter(|e| e.effect_type.starts_with("damage"))
                 .map(|e| e.value)
                 .sum();
-            let ability_mult = if ability_damage > 0.0 { 1.0 + (ability_damage / base_damage).min(5.0) } else { 1.0 };
+            let ability_mult = if ability_damage > 0.0 {
+                1.0 + (ability_damage / base_damage).min(5.0)
+            } else {
+                1.0
+            };
             base_damage *= ability_mult;
             modifiers.push(DamageModifier {
                 source: format!("ability:{}", req.ability_id),
@@ -175,8 +187,13 @@ async fn calculate_damage(
     let attack_data = &sword_attacks[step_idx];
 
     let result = combat::calculate_damage(
-        base_damage, attack_data, angle, combo_step,
-        semantic_affinity, false, false,
+        base_damage,
+        attack_data,
+        angle,
+        combo_step,
+        semantic_affinity,
+        false,
+        false,
     );
 
     modifiers.push(DamageModifier {
@@ -209,7 +226,9 @@ async fn get_combat_state(
     Json(req): Json<CombatStateRequest>,
 ) -> Json<CombatStateResponse> {
     // Read from world snapshot for combat state
-    let snap = state.world_snapshot.read()
+    let snap = state
+        .world_snapshot
+        .read()
         .map(|s| s.clone())
         .unwrap_or_default();
 
@@ -302,11 +321,14 @@ async fn process_action(
                     mastery_xp = xp;
 
                     // Award mastery XP
-                    let _ = state.pg.add_mastery_experience(
-                        req.player_id as i64,
-                        &mastery_domain,
-                        mastery_xp as i64,
-                    ).await;
+                    let _ = state
+                        .pg
+                        .add_mastery_experience(
+                            req.player_id as i64,
+                            &mastery_domain,
+                            mastery_xp as i64,
+                        )
+                        .await;
 
                     // If attack, look up weapon damage
                     if matches!(action, ActionType::Attack | ActionType::HeavyAttack) {

@@ -18,22 +18,22 @@
 //! All endpoints follow gRPC path pattern: `POST /tower.<Service>/<Method>`
 //! Example: `POST /tower.GenerationService/GenerateFloor`
 
-pub mod generation;
-pub mod mastery;
-pub mod economy;
-pub mod game_state;
 pub mod combat;
 pub mod destruction;
+pub mod economy;
+pub mod game_state;
+pub mod generation;
+pub mod mastery;
 
-use axum::{Router, Json, middleware, routing::get};
+use axum::{middleware, routing::get, Json, Router};
+use serde::Serialize;
 use std::sync::Arc;
 use tracing::info;
-use serde::Serialize;
 
-use crate::storage::lmdb_templates::LmdbTemplateStore;
-use crate::storage::postgres::PostgresStore;
 use crate::ecs_bridge::{CommandSender, SharedWorldSnapshot};
 use crate::metrics::ServerMetrics;
+use crate::storage::lmdb_templates::LmdbTemplateStore;
+use crate::storage::postgres::PostgresStore;
 
 /// Shared state available to all API handlers
 #[derive(Clone)]
@@ -91,7 +91,13 @@ pub async fn start_api_server(
     port: u16,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let metrics = ServerMetrics::new();
-    let state = ApiState { lmdb, pg, ecs_commands, world_snapshot, metrics };
+    let state = ApiState {
+        lmdb,
+        pg,
+        ecs_commands,
+        world_snapshot,
+        metrics,
+    };
     let app = build_router(state);
 
     let addr = format!("0.0.0.0:{}", port);

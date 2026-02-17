@@ -3,13 +3,13 @@
 //! Tests the full pipeline: generation → combat → loot → storage
 //! Validates that all systems work together correctly.
 
+use std::collections::HashMap;
 use tower_bevy_server::combat;
-use tower_bevy_server::monster_gen;
-use tower_bevy_server::loot;
 use tower_bevy_server::destruction;
 use tower_bevy_server::ecs_bridge;
+use tower_bevy_server::loot;
+use tower_bevy_server::monster_gen;
 use tower_bevy_server::semantic_tags::SemanticTags;
-use std::collections::HashMap;
 
 // ============================================================================
 // Full Pipeline: Floor → Monsters → Combat → Loot
@@ -19,10 +19,7 @@ use std::collections::HashMap;
 fn test_full_floor_pipeline() {
     let tower_seed = 42u64;
     let floor_id = 5u32;
-    let biome_tags = vec![
-        ("forest".to_string(), 0.8),
-        ("nature".to_string(), 0.6),
-    ];
+    let biome_tags = vec![("forest".to_string(), 0.8), ("nature".to_string(), 0.6)];
 
     // Step 1: Generate monsters for this floor
     let monsters = monster_gen::generate_room_monsters(tower_seed, floor_id, 1, &biome_tags, 5);
@@ -30,8 +27,16 @@ fn test_full_floor_pipeline() {
 
     for monster in &monsters {
         // Every monster should have valid stats
-        assert!(monster.max_health > 0.0, "Monster {} has 0 HP", monster.name);
-        assert!(monster.base_damage > 0.0, "Monster {} has 0 damage", monster.name);
+        assert!(
+            monster.max_health > 0.0,
+            "Monster {} has 0 HP",
+            monster.name
+        );
+        assert!(
+            monster.base_damage > 0.0,
+            "Monster {} has 0 damage",
+            monster.name
+        );
         assert!(!monster.name.is_empty());
 
         // Every monster should inherit floor biome tags
@@ -51,7 +56,10 @@ fn test_full_floor_pipeline() {
 
         // Attack combo
         let r1 = combat::try_combat_action(
-            &mut combat_state, combat::ActionType::Attack, &weapon, &movesets,
+            &mut combat_state,
+            combat::ActionType::Attack,
+            &weapon,
+            &movesets,
         );
         assert!(r1.success);
         assert_eq!(r1.combo_step, 0);
@@ -67,7 +75,10 @@ fn test_full_floor_pipeline() {
             false,
             false,
         );
-        assert!(damage.final_damage > weapon.base_damage, "Back attack should deal more damage");
+        assert!(
+            damage.final_damage > weapon.base_damage,
+            "Back attack should deal more damage"
+        );
         assert_eq!(damage.angle, combat::AttackAngle::Back);
 
         // Step 3: Generate loot from killed monster
@@ -108,22 +119,29 @@ fn test_combat_parry_counter_sequence() {
 
     // Attacker attacks
     let atk = combat::try_combat_action(
-        &mut attacker, combat::ActionType::Attack, &weapon, &movesets,
+        &mut attacker,
+        combat::ActionType::Attack,
+        &weapon,
+        &movesets,
     );
     assert!(atk.success);
 
     // Defender parries
-    let parry = combat::try_combat_action(
-        &mut defender, combat::ActionType::Parry, &weapon, &movesets,
-    );
+    let parry =
+        combat::try_combat_action(&mut defender, combat::ActionType::Parry, &weapon, &movesets);
     assert!(parry.success);
     assert!(defender.parry_window > 0.0);
 
     // Damage with parry active → 0 damage
     let attack_data = atk.attack_data.unwrap();
     let damage = combat::calculate_damage(
-        50.0, &attack_data, combat::AttackAngle::Front, 0, 0.0,
-        false, true, // target is parrying
+        50.0,
+        &attack_data,
+        combat::AttackAngle::Front,
+        0,
+        0.0,
+        false,
+        true, // target is parrying
     );
     assert!(damage.was_parried);
     assert_eq!(damage.final_damage, 0.0);
@@ -143,22 +161,23 @@ fn test_combat_parry_counter_sequence() {
         was_blocked: false,
         was_parried: false,
     };
-    let outcome = combat::apply_damage_to_target(
-        &mut attacker, &mut attacker_health, &stagger_damage,
-    );
+    let outcome =
+        combat::apply_damage_to_target(&mut attacker, &mut attacker_health, &stagger_damage);
     assert_eq!(outcome, combat::DamageOutcome::Staggered);
 
     // Defender counters while attacker is staggered
     defender.phase = combat::CombatPhase::Idle;
     let counter = combat::try_combat_action(
-        &mut defender, combat::ActionType::Attack, &weapon, &movesets,
+        &mut defender,
+        combat::ActionType::Attack,
+        &weapon,
+        &movesets,
     );
     assert!(counter.success);
 
     // Mastery XP for parry should be highest
-    let (domain, xp) = combat::mastery_xp_for_action(
-        combat::ActionType::Parry, combat::DamageOutcome::Parried,
-    );
+    let (domain, xp) =
+        combat::mastery_xp_for_action(combat::ActionType::Parry, combat::DamageOutcome::Parried);
     assert_eq!(domain, "ParryMastery");
     assert_eq!(xp, 50.0);
 }
@@ -185,7 +204,7 @@ fn test_weapon_type_differences() {
     assert!(hammer[0].poise_damage > spear[0].poise_damage);
 
     // Hammer finisher is devastating
-    assert!(hammer[1].damage_mult > sword[sword.len()-1].damage_mult);
+    assert!(hammer[1].damage_mult > sword[sword.len() - 1].damage_mult);
 }
 
 // ============================================================================
@@ -205,15 +224,19 @@ fn test_biome_monster_coherence() {
     for m in &fire_monsters {
         // Should inherit fire biome at 70%
         let fire_tag = m.semantic_tags.get("fire");
-        assert!(fire_tag.is_some() || m.semantic_tags.get("volcanic").is_some(),
-            "Fire biome monster should have fire/volcanic tags");
+        assert!(
+            fire_tag.is_some() || m.semantic_tags.get("volcanic").is_some(),
+            "Fire biome monster should have fire/volcanic tags"
+        );
     }
 
     // Ice monsters should carry ice tags
     for m in &ice_monsters {
         let ice_tag = m.semantic_tags.get("ice");
-        assert!(ice_tag.is_some() || m.semantic_tags.get("frozen").is_some(),
-            "Ice biome monster should have ice/frozen tags");
+        assert!(
+            ice_tag.is_some() || m.semantic_tags.get("frozen").is_some(),
+            "Ice biome monster should have ice/frozen tags"
+        );
     }
 }
 
@@ -228,8 +251,12 @@ fn test_floor_depth_scaling() {
     let avg_hp_f50: f32 = floor50.iter().map(|m| m.max_health).sum::<f32>() / 10.0;
 
     // Floor 50 should have significantly higher HP monsters
-    assert!(avg_hp_f50 > avg_hp_f1 * 3.0,
-        "Floor 50 avg HP ({:.0}) should be >3x floor 1 ({:.0})", avg_hp_f50, avg_hp_f1);
+    assert!(
+        avg_hp_f50 > avg_hp_f1 * 3.0,
+        "Floor 50 avg HP ({:.0}) should be >3x floor 1 ({:.0})",
+        avg_hp_f50,
+        avg_hp_f1
+    );
 }
 
 // ============================================================================
@@ -264,8 +291,12 @@ fn test_loot_semantic_theme_consistency() {
         }
     }
 
-    assert!(fire_items > total_seeds / 4,
-        "Fire monsters should produce fire-themed items ({}/{})", fire_items, total_seeds);
+    assert!(
+        fire_items > total_seeds / 4,
+        "Fire monsters should produce fire-themed items ({}/{})",
+        fire_items,
+        total_seeds
+    );
 }
 
 #[test]
@@ -287,12 +318,28 @@ fn test_rarity_distribution_is_reasonable() {
     }
 
     // Common should be most frequent
-    let common = rarity_counts.get(&loot::Rarity::Common).copied().unwrap_or(0);
-    let uncommon = rarity_counts.get(&loot::Rarity::Uncommon).copied().unwrap_or(0);
+    let common = rarity_counts
+        .get(&loot::Rarity::Common)
+        .copied()
+        .unwrap_or(0);
+    let uncommon = rarity_counts
+        .get(&loot::Rarity::Uncommon)
+        .copied()
+        .unwrap_or(0);
     let rare = rarity_counts.get(&loot::Rarity::Rare).copied().unwrap_or(0);
 
-    assert!(common > uncommon, "Common ({}) should exceed Uncommon ({})", common, uncommon);
-    assert!(uncommon > rare, "Uncommon ({}) should exceed Rare ({})", uncommon, rare);
+    assert!(
+        common > uncommon,
+        "Common ({}) should exceed Uncommon ({})",
+        common,
+        uncommon
+    );
+    assert!(
+        uncommon > rare,
+        "Uncommon ({}) should exceed Rare ({})",
+        uncommon,
+        rare
+    );
 }
 
 // ============================================================================
@@ -304,14 +351,16 @@ fn test_destruction_with_combat_damage_types() {
     let mut manager = destruction::FloorDestructionManager::new();
 
     // Spawn a wooden wall
-    let entity_id = manager.spawn("wall_wood_3m", 1,
-        bevy::math::Vec3::new(0.0, 0.0, 0.0)).unwrap();
+    let entity_id = manager
+        .spawn("wall_wood_3m", 1, bevy::math::Vec3::new(0.0, 0.0, 0.0))
+        .unwrap();
 
     // Fire damage should deal bonus to wood
     let fire_result = manager.apply_damage(
-        entity_id, 1,
+        entity_id,
+        1,
         bevy::math::Vec3::new(0.5, 0.5, 0.0), // impact
-        bevy::math::Vec3::ZERO, // entity pos
+        bevy::math::Vec3::ZERO,               // entity pos
         50.0,
         0.0,
         destruction::DestructionDamageType::ElementalFire,
@@ -322,11 +371,13 @@ fn test_destruction_with_combat_damage_types() {
     assert!(fire_dmg.damage_dealt > 0.0);
 
     // Spawn stone wall for comparison
-    let stone_id = manager.spawn("wall_stone_3m", 1,
-        bevy::math::Vec3::new(10.0, 0.0, 0.0)).unwrap();
+    let stone_id = manager
+        .spawn("wall_stone_3m", 1, bevy::math::Vec3::new(10.0, 0.0, 0.0))
+        .unwrap();
 
     let stone_result = manager.apply_damage(
-        stone_id, 1,
+        stone_id,
+        1,
         bevy::math::Vec3::new(10.5, 0.5, 0.0),
         bevy::math::Vec3::new(10.0, 0.0, 0.0),
         50.0,
@@ -336,8 +387,10 @@ fn test_destruction_with_combat_damage_types() {
 
     assert!(stone_result.is_some());
     // Fire should deal more to wood than stone
-    assert!(fire_dmg.damage_dealt > stone_result.unwrap().damage_dealt,
-        "Fire should be more effective against wood than stone");
+    assert!(
+        fire_dmg.damage_dealt > stone_result.unwrap().damage_dealt,
+        "Fire should be more effective against wood than stone"
+    );
 }
 
 // ============================================================================
@@ -356,19 +409,27 @@ async fn test_ecs_bridge_combat_command() {
         position: [0.0, 0.0, 0.0],
         facing: 0.0,
         reply: reply_tx,
-    }).unwrap();
+    })
+    .unwrap();
 
     // Receive on Bevy side
     let cmd = rx.receiver.recv().await.unwrap();
     match cmd {
-        ecs_bridge::GameCommand::CombatAction { player_id, action, reply, .. } => {
+        ecs_bridge::GameCommand::CombatAction {
+            player_id,
+            action,
+            reply,
+            ..
+        } => {
             assert_eq!(player_id, 1);
             assert_eq!(action, combat::ActionType::Attack);
-            reply.send(ecs_bridge::CombatActionCommandResult {
-                success: true,
-                action_result: None,
-                message: "OK".into(),
-            }).unwrap();
+            reply
+                .send(ecs_bridge::CombatActionCommandResult {
+                    success: true,
+                    action_result: None,
+                    message: "OK".into(),
+                })
+                .unwrap();
         }
         _ => panic!("Wrong command type"),
     }
@@ -384,14 +445,17 @@ async fn test_ecs_bridge_spawn_and_query() {
     // Write player to snapshot
     {
         let mut snap = snapshot.write().unwrap();
-        snap.players.insert(42, ecs_bridge::PlayerSnapshot {
-            id: 42,
-            position: [10.0, 0.0, 20.0],
-            health: 85.0,
-            max_health: 100.0,
-            current_floor: 5,
-            in_combat: true,
-        });
+        snap.players.insert(
+            42,
+            ecs_bridge::PlayerSnapshot {
+                id: 42,
+                position: [10.0, 0.0, 20.0],
+                health: 85.0,
+                max_health: 100.0,
+                current_floor: 5,
+                in_combat: true,
+            },
+        );
         snap.tick = 100;
     }
 
@@ -409,20 +473,23 @@ async fn test_ecs_bridge_spawn_and_query() {
     tx.send(ecs_bridge::GameCommand::GetPlayer {
         player_id: 42,
         reply: reply_tx,
-    }).unwrap();
+    })
+    .unwrap();
 
     let cmd = rx.receiver.recv().await.unwrap();
     match cmd {
         ecs_bridge::GameCommand::GetPlayer { player_id, reply } => {
             assert_eq!(player_id, 42);
-            reply.send(Some(ecs_bridge::PlayerSnapshot {
-                id: 42,
-                position: [10.0, 0.0, 20.0],
-                health: 85.0,
-                max_health: 100.0,
-                current_floor: 5,
-                in_combat: true,
-            })).unwrap();
+            reply
+                .send(Some(ecs_bridge::PlayerSnapshot {
+                    id: 42,
+                    position: [10.0, 0.0, 20.0],
+                    health: 85.0,
+                    max_health: 100.0,
+                    current_floor: 5,
+                    in_combat: true,
+                }))
+                .unwrap();
         }
         _ => panic!("Wrong command"),
     }
@@ -438,10 +505,7 @@ async fn test_ecs_bridge_spawn_and_query() {
 
 #[test]
 fn test_semantic_similarity_affects_loot_quality() {
-    let monster_tags = HashMap::from([
-        ("fire".to_string(), 0.9),
-        ("aggression".to_string(), 0.7),
-    ]);
+    let monster_tags = HashMap::from([("fire".to_string(), 0.9), ("aggression".to_string(), 0.7)]);
 
     // High affinity player
     let high_config = loot::LootConfig {
@@ -470,8 +534,12 @@ fn test_semantic_similarity_affects_loot_quality() {
     }
 
     // High affinity should yield more drops (due to bonus semantic drops)
-    assert!(high_total >= low_total,
-        "High affinity ({}) should yield >= drops than low ({})", high_total, low_total);
+    assert!(
+        high_total >= low_total,
+        "High affinity ({}) should yield >= drops than low ({})",
+        high_total,
+        low_total
+    );
 }
 
 #[test]
@@ -484,8 +552,12 @@ fn test_semantic_tags_cosine_similarity() {
     let ice_sim = player.similarity(&ice_monster);
 
     // Player with fire tags should be more similar to fire monster
-    assert!(fire_sim > ice_sim,
-        "Fire similarity ({:.3}) should exceed ice ({:.3})", fire_sim, ice_sim);
+    assert!(
+        fire_sim > ice_sim,
+        "Fire similarity ({:.3}) should exceed ice ({:.3})",
+        fire_sim,
+        ice_sim
+    );
 }
 
 // ============================================================================
@@ -515,7 +587,10 @@ fn test_kill_monster_full_pipeline() {
 
     // Execute heavy attack
     let result = combat::try_combat_action(
-        &mut player_state, combat::ActionType::HeavyAttack, &weapon, &movesets,
+        &mut player_state,
+        combat::ActionType::HeavyAttack,
+        &weapon,
+        &movesets,
     );
     assert!(result.success);
 
@@ -523,18 +598,22 @@ fn test_kill_monster_full_pipeline() {
 
     // Calculate damage with back attack + semantic bonus
     let damage = combat::calculate_damage(
-        weapon.base_damage, &attack,
+        weapon.base_damage,
+        &attack,
         combat::AttackAngle::Back,
-        0, 0.3, // Semantic bonus
-        false, false,
+        0,
+        0.3, // Semantic bonus
+        false,
+        false,
     );
 
     // Apply damage
-    let mut monster_state = combat::CombatState { poise: 50.0, ..Default::default() };
+    let mut monster_state = combat::CombatState {
+        poise: 50.0,
+        ..Default::default()
+    };
     let mut monster_hp = blueprint.max_health;
-    let outcome = combat::apply_damage_to_target(
-        &mut monster_state, &mut monster_hp, &damage,
-    );
+    let outcome = combat::apply_damage_to_target(&mut monster_state, &mut monster_hp, &damage);
 
     // Monster should take heavy damage (may or may not be killed depending on HP)
     assert!(damage.final_damage > 0.0);
@@ -558,7 +637,8 @@ fn test_kill_monster_full_pipeline() {
 
         // Mastery XP
         let (domain, xp) = combat::mastery_xp_for_action(
-            combat::ActionType::HeavyAttack, combat::DamageOutcome::Killed,
+            combat::ActionType::HeavyAttack,
+            combat::DamageOutcome::Killed,
         );
         assert_eq!(domain, "WeaponMastery");
         assert_eq!(xp, 75.0); // Heavy attack kill = 75 XP

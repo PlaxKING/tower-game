@@ -4,19 +4,23 @@
 //! LMDB seed data → Template store → Repository adapters → Queries
 
 use std::sync::Arc;
-use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
-use tower_bevy_server::storage::seed_data;
 use tower_bevy_server::storage::lmdb_repo_adapter::*;
+use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
 use tower_bevy_server::storage::repository::*;
+use tower_bevy_server::storage::seed_data;
 
 /// Helper to create a temporary LMDB store seeded with test data
 fn create_seeded_store() -> (Arc<LmdbTemplateStore>, std::path::PathBuf) {
     let temp_dir = std::env::temp_dir().join(format!(
-        "tower_storage_test_{}_{}", std::process::id(), std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH).unwrap().subsec_nanos()
+        "tower_storage_test_{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .subsec_nanos()
     ));
     let store = Arc::new(
-        LmdbTemplateStore::new(&temp_dir, 50 * 1024 * 1024).expect("Failed to create LMDB store")
+        LmdbTemplateStore::new(&temp_dir, 50 * 1024 * 1024).expect("Failed to create LMDB store"),
     );
     seed_data::seed_all(&store).expect("Failed to seed data");
     (store, temp_dir)
@@ -40,7 +44,11 @@ fn test_seed_all_populates_all_databases() {
     assert!(stats.loot_tables > 0, "Should have seeded loot tables");
 
     println!("\n{}", stats.summary());
-    assert!(stats.total() >= 30, "Should have at least 30 templates total, got {}", stats.total());
+    assert!(
+        stats.total() >= 30,
+        "Should have at least 30 templates total, got {}",
+        stats.total()
+    );
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
@@ -49,16 +57,28 @@ fn test_seed_all_populates_all_databases() {
 fn test_seed_monsters_have_valid_fields() {
     let (store, temp_dir) = create_seeded_store();
 
-    let goblin = store.get_monster("goblin_scout").unwrap().expect("Goblin should exist");
+    let goblin = store
+        .get_monster("goblin_scout")
+        .unwrap()
+        .expect("Goblin should exist");
     assert_eq!(goblin.name, "Goblin Scout");
     assert!(goblin.base_health > 0.0, "Goblin should have health");
     assert!(goblin.base_damage > 0.0, "Goblin should have damage");
-    assert!(!goblin.loot_table_id.is_empty(), "Goblin should have loot table");
+    assert!(
+        !goblin.loot_table_id.is_empty(),
+        "Goblin should have loot table"
+    );
     assert!(!goblin.model_id.is_empty(), "Goblin should have model");
 
     // Check a boss-tier monster
-    let guardian = store.get_monster("tower_guardian_alpha").unwrap().expect("Guardian should exist");
-    assert!(guardian.base_health > goblin.base_health, "Boss should have more health than scout");
+    let guardian = store
+        .get_monster("tower_guardian_alpha")
+        .unwrap()
+        .expect("Guardian should exist");
+    assert!(
+        guardian.base_health > goblin.base_health,
+        "Boss should have more health than scout"
+    );
     assert!(guardian.tier > goblin.tier, "Boss should be higher tier");
 
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -69,16 +89,25 @@ fn test_seed_items_cover_multiple_types() {
     let (store, temp_dir) = create_seeded_store();
 
     // Weapon
-    let sword = store.get_item("iron_sword").unwrap().expect("Iron sword should exist");
+    let sword = store
+        .get_item("iron_sword")
+        .unwrap()
+        .expect("Iron sword should exist");
     assert_eq!(sword.name, "Iron Sword");
     assert!(sword.base_damage > 0.0, "Sword should have damage");
 
     // Armor
-    let plate = store.get_item("iron_plate").unwrap().expect("Iron plate should exist");
+    let plate = store
+        .get_item("iron_plate")
+        .unwrap()
+        .expect("Iron plate should exist");
     assert!(plate.base_defense > 0.0, "Plate should have defense");
 
     // Consumable
-    let potion = store.get_item("health_potion_small").unwrap().expect("Health potion should exist");
+    let potion = store
+        .get_item("health_potion_small")
+        .unwrap()
+        .expect("Health potion should exist");
     assert!(potion.max_stack > 1, "Potions should be stackable");
 
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -88,11 +117,20 @@ fn test_seed_items_cover_multiple_types() {
 fn test_seed_abilities_have_domains() {
     let (store, temp_dir) = create_seeded_store();
 
-    let slash = store.get_ability("slash_basic").unwrap().expect("Basic slash should exist");
-    assert!(!slash.required_mastery_domain.is_empty(), "Ability should have mastery domain");
+    let slash = store
+        .get_ability("slash_basic")
+        .unwrap()
+        .expect("Basic slash should exist");
+    assert!(
+        !slash.required_mastery_domain.is_empty(),
+        "Ability should have mastery domain"
+    );
     assert!(slash.cooldown_ms > 0, "Ability should have cooldown");
 
-    let fireball = store.get_ability("fireball").unwrap().expect("Fireball should exist");
+    let fireball = store
+        .get_ability("fireball")
+        .unwrap()
+        .expect("Fireball should exist");
     assert!(!fireball.required_mastery_domain.is_empty());
 
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -102,9 +140,18 @@ fn test_seed_abilities_have_domains() {
 fn test_seed_recipes_reference_valid_items() {
     let (store, temp_dir) = create_seeded_store();
 
-    let recipe = store.get_recipe("recipe_iron_sword").unwrap().expect("Iron sword recipe should exist");
-    assert_eq!(recipe.result_item_id, "iron_sword", "Recipe should produce iron sword");
-    assert!(!recipe.ingredients.is_empty(), "Recipe should have ingredients");
+    let recipe = store
+        .get_recipe("recipe_iron_sword")
+        .unwrap()
+        .expect("Iron sword recipe should exist");
+    assert_eq!(
+        recipe.result_item_id, "iron_sword",
+        "Recipe should produce iron sword"
+    );
+    assert!(
+        !recipe.ingredients.is_empty(),
+        "Recipe should have ingredients"
+    );
     assert!(recipe.craft_time_ms > 0, "Recipe should take time");
 
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -114,7 +161,10 @@ fn test_seed_recipes_reference_valid_items() {
 fn test_seed_quests_have_objectives_and_rewards() {
     let (store, temp_dir) = create_seeded_store();
 
-    let quest = store.get_quest("quest_first_blood").unwrap().expect("First blood quest should exist");
+    let quest = store
+        .get_quest("quest_first_blood")
+        .unwrap()
+        .expect("First blood quest should exist");
     assert!(!quest.objectives.is_empty(), "Quest should have objectives");
     assert!(quest.rewards.is_some(), "Quest should have rewards");
 
@@ -128,13 +178,19 @@ fn test_seed_quests_have_objectives_and_rewards() {
 fn test_seed_loot_tables_have_entries() {
     let (store, temp_dir) = create_seeded_store();
 
-    let table = store.get_loot_table("loot_goblin").unwrap().expect("Goblin loot table should exist");
+    let table = store
+        .get_loot_table("loot_goblin")
+        .unwrap()
+        .expect("Goblin loot table should exist");
     assert!(!table.entries.is_empty(), "Loot table should have entries");
 
     // Verify all entries have valid drop chances
     for entry in &table.entries {
-        assert!(entry.drop_chance > 0.0 && entry.drop_chance <= 1.0,
-            "Drop chance should be in (0, 1], got {}", entry.drop_chance);
+        assert!(
+            entry.drop_chance > 0.0 && entry.drop_chance <= 1.0,
+            "Drop chance should be in (0, 1], got {}",
+            entry.drop_chance
+        );
     }
 
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -181,7 +237,11 @@ async fn test_monster_repo_get_all_and_count() {
     let all = repo.get_all().await.unwrap();
     let count = repo.count().await.unwrap();
     assert_eq!(all.len(), count, "get_all len should match count");
-    assert!(count >= 10, "Should have at least 10 monsters, got {}", count);
+    assert!(
+        count >= 10,
+        "Should have at least 10 monsters, got {}",
+        count
+    );
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
@@ -228,7 +288,10 @@ async fn test_ability_repo_get_by_domain() {
     let repo = LmdbAbilityRepo::new(store.clone());
 
     let sword_abilities = repo.get_by_domain("SwordMastery").await.unwrap();
-    assert!(!sword_abilities.is_empty(), "Should have SwordMastery-domain abilities");
+    assert!(
+        !sword_abilities.is_empty(),
+        "Should have SwordMastery-domain abilities"
+    );
     for a in &sword_abilities {
         assert_eq!(a.required_mastery_domain, "SwordMastery");
     }
@@ -273,15 +336,20 @@ async fn test_quest_repo_get_available_for_floor() {
     // Floor 1 quests - should get quests with required_floor_min <= 1
     let floor1_quests = repo.get_available_for_floor(1).await.unwrap();
     for q in &floor1_quests {
-        assert!(q.required_floor_min <= 1,
+        assert!(
+            q.required_floor_min <= 1,
             "Quest {} requires floor {} but was returned for floor 1",
-            q.id, q.required_floor_min);
+            q.id,
+            q.required_floor_min
+        );
     }
 
     // Floor 100 should have at least as many quests as floor 1
     let floor100_quests = repo.get_available_for_floor(100).await.unwrap();
-    assert!(floor100_quests.len() >= floor1_quests.len(),
-        "Higher floors should have at least as many available quests");
+    assert!(
+        floor100_quests.len() >= floor1_quests.len(),
+        "Higher floors should have at least as many available quests"
+    );
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
@@ -292,7 +360,11 @@ async fn test_faction_repo() {
     let repo = LmdbFactionRepo::new(store.clone());
 
     let all = repo.get_all().await.unwrap();
-    assert!(all.len() >= 4, "Should have at least 4 factions, got {}", all.len());
+    assert!(
+        all.len() >= 4,
+        "Should have at least 4 factions, got {}",
+        all.len()
+    );
 
     let guard = repo.get("tower_guard").await.unwrap();
     assert!(guard.is_some(), "Tower Guard faction should exist");
@@ -311,7 +383,11 @@ async fn test_loot_table_repo() {
     let all = repo.get_all().await.unwrap();
     let count = repo.count().await.unwrap();
     assert_eq!(all.len(), count);
-    assert!(count >= 4, "Should have at least 4 loot tables, got {}", count);
+    assert!(
+        count >= 4,
+        "Should have at least 4 loot tables, got {}",
+        count
+    );
 
     let goblin_loot = repo.get("loot_goblin").await.unwrap();
     assert!(goblin_loot.is_some());
@@ -333,9 +409,12 @@ async fn test_monster_loot_table_references_valid() {
     for monster in &all_monsters {
         if !monster.loot_table_id.is_empty() {
             let loot_table = loot_repo.get(&monster.loot_table_id).await.unwrap();
-            assert!(loot_table.is_some(),
+            assert!(
+                loot_table.is_some(),
                 "Monster '{}' references loot table '{}' which doesn't exist",
-                monster.id, monster.loot_table_id);
+                monster.id,
+                monster.loot_table_id
+            );
         }
     }
 
@@ -352,9 +431,12 @@ async fn test_recipe_output_items_exist() {
     for recipe in &all_recipes {
         if !recipe.result_item_id.is_empty() {
             let item = item_repo.get(&recipe.result_item_id).await.unwrap();
-            assert!(item.is_some(),
+            assert!(
+                item.is_some(),
                 "Recipe '{}' produces item '{}' which doesn't exist",
-                recipe.id, recipe.result_item_id);
+                recipe.id,
+                recipe.result_item_id
+            );
         }
     }
 
@@ -371,9 +453,12 @@ async fn test_faction_relations_bidirectional() {
 
     for faction in &all_factions {
         for relation in &faction.relations {
-            assert!(faction_ids.contains(&relation.target_faction_id),
+            assert!(
+                faction_ids.contains(&relation.target_faction_id),
                 "Faction '{}' has relation to unknown faction '{}'",
-                faction.id, relation.target_faction_id);
+                faction.id,
+                relation.target_faction_id
+            );
         }
     }
 
@@ -386,9 +471,8 @@ async fn test_faction_relations_bidirectional() {
 
 #[test]
 fn test_seed_is_idempotent() {
-    let temp_dir = std::env::temp_dir().join(format!(
-        "tower_idempotent_test_{}", std::process::id()
-    ));
+    let temp_dir =
+        std::env::temp_dir().join(format!("tower_idempotent_test_{}", std::process::id()));
     let store = LmdbTemplateStore::new(&temp_dir, 50 * 1024 * 1024).unwrap();
 
     // Seed twice
@@ -399,17 +483,18 @@ fn test_seed_is_idempotent() {
     let stats2 = store.stats().unwrap();
 
     // Counts should be the same (upsert semantics)
-    assert_eq!(stats1.total(), stats2.total(),
-        "Seeding twice should not duplicate entries");
+    assert_eq!(
+        stats1.total(),
+        stats2.total(),
+        "Seeding twice should not duplicate entries"
+    );
 
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
 
 #[test]
 fn test_template_store_survives_reopen() {
-    let temp_dir = std::env::temp_dir().join(format!(
-        "tower_reopen_test_{}", std::process::id()
-    ));
+    let temp_dir = std::env::temp_dir().join(format!("tower_reopen_test_{}", std::process::id()));
 
     // Create and seed
     {

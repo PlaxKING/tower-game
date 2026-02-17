@@ -119,8 +119,10 @@ impl SemanticTags {
         }
 
         // Convert to hashmaps for efficient lookup
-        let self_map: HashMap<&str, f32> = self.tags.iter().map(|(k, v)| (k.as_str(), *v)).collect();
-        let other_map: HashMap<&str, f32> = other.tags.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+        let self_map: HashMap<&str, f32> =
+            self.tags.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+        let other_map: HashMap<&str, f32> =
+            other.tags.iter().map(|(k, v)| (k.as_str(), *v)).collect();
 
         // Compute dot product (only for shared tags)
         let mut dot_product = 0.0;
@@ -367,9 +369,8 @@ impl MasteryDomain {
     pub fn category(&self) -> DomainCategory {
         use MasteryDomain::*;
         match self {
-            SwordMastery | AxeMastery | SpearMastery | BowMastery | StaffMastery | FistMastery | DualWieldMastery => {
-                DomainCategory::Weapon
-            }
+            SwordMastery | AxeMastery | SpearMastery | BowMastery | StaffMastery | FistMastery
+            | DualWieldMastery => DomainCategory::Weapon,
             ParryMastery | DodgeMastery | CounterMastery | ComboMastery | PositioningMastery => {
                 DomainCategory::Combat
             }
@@ -487,11 +488,26 @@ mod tests {
 
     #[test]
     fn test_domain_categories() {
-        assert_eq!(MasteryDomain::SwordMastery.category(), DomainCategory::Weapon);
-        assert_eq!(MasteryDomain::ParryMastery.category(), DomainCategory::Combat);
-        assert_eq!(MasteryDomain::SmithingMastery.category(), DomainCategory::Crafting);
-        assert_eq!(MasteryDomain::MiningMastery.category(), DomainCategory::Gathering);
-        assert_eq!(MasteryDomain::ExplorationMastery.category(), DomainCategory::Other);
+        assert_eq!(
+            MasteryDomain::SwordMastery.category(),
+            DomainCategory::Weapon
+        );
+        assert_eq!(
+            MasteryDomain::ParryMastery.category(),
+            DomainCategory::Combat
+        );
+        assert_eq!(
+            MasteryDomain::SmithingMastery.category(),
+            DomainCategory::Crafting
+        );
+        assert_eq!(
+            MasteryDomain::MiningMastery.category(),
+            DomainCategory::Gathering
+        );
+        assert_eq!(
+            MasteryDomain::ExplorationMastery.category(),
+            DomainCategory::Other
+        );
     }
 
     #[test]

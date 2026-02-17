@@ -67,27 +67,27 @@ mod tests {
             tick: 1000,
             timestamp: 1234567890,
             server_time_ms: 5000,
-            players: vec![
-                EntitySnapshot {
-                    entity_id: 1,
-                    changed_fields: 0xFF,
-                    position: Some(Vec3 {
-                        x: 10.0,
-                        y: 0.0,
-                        z: 5.0,
-                    }),
-                    velocity: None,
-                    rotation: None,
-                    health: Some(85.5),
-                    state: None,
-                },
-            ],
+            players: vec![EntitySnapshot {
+                entity_id: 1,
+                changed_fields: 0xFF,
+                position: Some(Vec3 {
+                    x: 10.0,
+                    y: 0.0,
+                    z: 5.0,
+                }),
+                velocity: None,
+                rotation: None,
+                health: Some(85.5),
+                state: None,
+            }],
             monsters: vec![],
         };
 
         // Serialize
         let mut buf = Vec::new();
-        snapshot.encode(&mut buf).expect("Failed to encode WorldSnapshot");
+        snapshot
+            .encode(&mut buf)
+            .expect("Failed to encode WorldSnapshot");
 
         // Deserialize
         let decoded = WorldSnapshot::decode(&buf[..]).expect("Failed to decode WorldSnapshot");
@@ -159,7 +159,7 @@ mod tests {
             seed: 0x1234567890ABCDEF,
             floor_id: 1,
             tiles: vec![FloorTileData::default(); 2500], // 50x50 floor
-            validation_hash: vec![0; 32], // SHA-256
+            validation_hash: vec![0; 32],                // SHA-256
             biome_id: 1,
             width: 50,
             height: 50,
@@ -178,6 +178,10 @@ mod tests {
         println!("Savings ratio: {}x", savings_ratio);
 
         // Should save at least 90x bandwidth (procedural data transfer wins!)
-        assert!(savings_ratio >= 90, "Expected at least 90x savings, got {}x", savings_ratio);
+        assert!(
+            savings_ratio >= 90,
+            "Expected at least 90x savings, got {}x",
+            savings_ratio
+        );
     }
 }

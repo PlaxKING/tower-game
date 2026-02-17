@@ -6,7 +6,7 @@
 //! - POST /tower.MasteryService/ChooseSpecialization
 //! - POST /tower.MasteryService/UpdateAbilityLoadout
 
-use axum::{Router, Json, extract::State, routing::post};
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use super::ApiState;
@@ -15,9 +15,18 @@ use crate::proto::tower::entities::AbilityTemplate;
 pub fn routes() -> Router<ApiState> {
     Router::new()
         .route("/tower.MasteryService/TrackProgress", post(track_progress))
-        .route("/tower.MasteryService/GetMasteryProfile", post(get_mastery_profile))
-        .route("/tower.MasteryService/ChooseSpecialization", post(choose_specialization))
-        .route("/tower.MasteryService/UpdateAbilityLoadout", post(update_ability_loadout))
+        .route(
+            "/tower.MasteryService/GetMasteryProfile",
+            post(get_mastery_profile),
+        )
+        .route(
+            "/tower.MasteryService/ChooseSpecialization",
+            post(choose_specialization),
+        )
+        .route(
+            "/tower.MasteryService/UpdateAbilityLoadout",
+            post(update_ability_loadout),
+        )
 }
 
 // ============================================================================
@@ -120,7 +129,11 @@ async fn track_progress(
 ) -> Json<MasteryProgressResponse> {
     let xp = req.xp_amount.max(0.0) as i64;
 
-    match state.pg.add_mastery_experience(req.player_id as i64, &req.domain, xp).await {
+    match state
+        .pg
+        .add_mastery_experience(req.player_id as i64, &req.domain, xp)
+        .await
+    {
         Ok(row) => {
             let new_tier = row.tier as u32;
             let xp_to_next = if (new_tier as usize) < TIER_THRESHOLDS.len() - 1 {
@@ -131,7 +144,10 @@ async fn track_progress(
 
             // Check if we crossed a tier boundary
             let old_xp = row.experience - xp;
-            let old_tier = TIER_THRESHOLDS.iter().rposition(|&t| old_xp as u64 >= t).unwrap_or(0);
+            let old_tier = TIER_THRESHOLDS
+                .iter()
+                .rposition(|&t| old_xp as u64 >= t)
+                .unwrap_or(0);
             let tier_up = new_tier as usize > old_tier;
 
             // Unlock abilities for new tier
@@ -168,28 +184,35 @@ async fn get_mastery_profile(
     State(state): State<ApiState>,
     Json(req): Json<MasteryProfileRequest>,
 ) -> Json<MasteryProfileResponse> {
-    let rows = state.pg.get_all_mastery(req.player_id as i64).await
+    let rows = state
+        .pg
+        .get_all_mastery(req.player_id as i64)
+        .await
         .unwrap_or_default();
 
-    let domains: Vec<DomainProfile> = rows.iter().map(|r| {
-        let tier = r.tier as u32;
-        let xp_required = if (tier as usize) < TIER_THRESHOLDS.len() - 1 {
-            TIER_THRESHOLDS[tier as usize + 1] as f64
-        } else {
-            TIER_THRESHOLDS.last().copied().unwrap_or(0) as f64
-        };
+    let domains: Vec<DomainProfile> = rows
+        .iter()
+        .map(|r| {
+            let tier = r.tier as u32;
+            let xp_required = if (tier as usize) < TIER_THRESHOLDS.len() - 1 {
+                TIER_THRESHOLDS[tier as usize + 1] as f64
+            } else {
+                TIER_THRESHOLDS.last().copied().unwrap_or(0) as f64
+            };
 
-        DomainProfile {
-            domain_name: r.domain.clone(),
-            tier,
-            xp_current: r.experience as f64,
-            xp_required,
-            specialization: r.specialization.clone().unwrap_or_default(),
-        }
-    }).collect();
+            DomainProfile {
+                domain_name: r.domain.clone(),
+                tier,
+                xp_current: r.experience as f64,
+                xp_required,
+                specialization: r.specialization.clone().unwrap_or_default(),
+            }
+        })
+        .collect();
 
     // Determine combat role from highest-tier specialization
-    let primary_combat_role = domains.iter()
+    let primary_combat_role = domains
+        .iter()
         .filter(|d| !d.specialization.is_empty())
         .max_by_key(|d| d.tier)
         .map(|d| d.specialization.clone())
@@ -205,7 +228,11 @@ async fn choose_specialization(
     State(state): State<ApiState>,
     Json(req): Json<ChooseSpecRequest>,
 ) -> Json<ChooseSpecResponse> {
-    match state.pg.set_mastery_specialization(req.player_id as i64, &req.domain, &req.branch_id).await {
+    match state
+        .pg
+        .set_mastery_specialization(req.player_id as i64, &req.domain, &req.branch_id)
+        .await
+    {
         Ok(()) => Json(ChooseSpecResponse {
             success: true,
             failure_reason: String::new(),
@@ -252,10 +279,11 @@ async fn update_ability_loadout(
 
 fn get_unlocked_abilities(domain: &str, tier: u32, state: &ApiState) -> Vec<String> {
     // Query ability templates from LMDB
-    let abilities: Vec<AbilityTemplate> = state.lmdb.get_all(state.lmdb.abilities)
-        .unwrap_or_default();
+    let abilities: Vec<AbilityTemplate> =
+        state.lmdb.get_all(state.lmdb.abilities).unwrap_or_default();
 
-    abilities.iter()
+    abilities
+        .iter()
         .filter(|a| a.required_mastery_domain == domain && a.required_mastery_tier <= tier as i32)
         .map(|a| a.id.clone())
         .collect()

@@ -74,22 +74,45 @@ impl LmdbTemplateStore {
 
         let mut wtxn = env.write_txn()?;
 
-        let monsters = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("monsters"))?;
-        let items = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("items"))?;
-        let abilities = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("abilities"))?;
-        let recipes = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("recipes"))?;
-        let quests = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("quests"))?;
-        let factions = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("factions"))?;
-        let loot_tables = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("loot_tables"))?;
-        let item_sets = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("item_sets"))?;
-        let gems = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("gems"))?;
-        let npcs = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("npcs"))?;
-        let achievements = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("achievements"))?;
-        let seasons = env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("seasons"))?;
+        let monsters = env
+            .create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("monsters"))?;
+        let items =
+            env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("items"))?;
+        let abilities = env.create_database::<heed::types::Str, heed::types::Bytes>(
+            &mut wtxn,
+            Some("abilities"),
+        )?;
+        let recipes = env
+            .create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("recipes"))?;
+        let quests =
+            env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("quests"))?;
+        let factions = env
+            .create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("factions"))?;
+        let loot_tables = env.create_database::<heed::types::Str, heed::types::Bytes>(
+            &mut wtxn,
+            Some("loot_tables"),
+        )?;
+        let item_sets = env.create_database::<heed::types::Str, heed::types::Bytes>(
+            &mut wtxn,
+            Some("item_sets"),
+        )?;
+        let gems =
+            env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("gems"))?;
+        let npcs =
+            env.create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("npcs"))?;
+        let achievements = env.create_database::<heed::types::Str, heed::types::Bytes>(
+            &mut wtxn,
+            Some("achievements"),
+        )?;
+        let seasons = env
+            .create_database::<heed::types::Str, heed::types::Bytes>(&mut wtxn, Some("seasons"))?;
 
         wtxn.commit()?;
 
-        info!("LMDB template store initialized with 12 databases ({}MB)", max_size / (1024 * 1024));
+        info!(
+            "LMDB template store initialized with 12 databases ({}MB)",
+            max_size / (1024 * 1024)
+        );
 
         Ok(Self {
             env: Arc::new(env),
@@ -113,7 +136,12 @@ impl LmdbTemplateStore {
     // ========================================================================
 
     /// Store a Protobuf message in the specified database
-    pub fn put<M: Message>(&self, db: Database<heed::types::Str, heed::types::Bytes>, key: &str, value: &M) -> Result<(), TemplateStoreError> {
+    pub fn put<M: Message>(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+        key: &str,
+        value: &M,
+    ) -> Result<(), TemplateStoreError> {
         let bytes = value.encode_to_vec();
         let mut wtxn = self.env.write_txn()?;
         db.put(&mut wtxn, key, &bytes)?;
@@ -123,11 +151,16 @@ impl LmdbTemplateStore {
     }
 
     /// Get a Protobuf message from the specified database
-    pub fn get<M: Message + Default>(&self, db: Database<heed::types::Str, heed::types::Bytes>, key: &str) -> Result<Option<M>, TemplateStoreError> {
+    pub fn get<M: Message + Default>(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+        key: &str,
+    ) -> Result<Option<M>, TemplateStoreError> {
         let rtxn = self.env.read_txn()?;
         match db.get(&rtxn, key)? {
             Some(bytes) => {
-                let msg = M::decode(bytes).map_err(|e| TemplateStoreError::Serialization(e.to_string()))?;
+                let msg = M::decode(bytes)
+                    .map_err(|e| TemplateStoreError::Serialization(e.to_string()))?;
                 Ok(Some(msg))
             }
             None => Ok(None),
@@ -135,20 +168,28 @@ impl LmdbTemplateStore {
     }
 
     /// Get all entries from a database
-    pub fn get_all<M: Message + Default>(&self, db: Database<heed::types::Str, heed::types::Bytes>) -> Result<Vec<M>, TemplateStoreError> {
+    pub fn get_all<M: Message + Default>(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+    ) -> Result<Vec<M>, TemplateStoreError> {
         let rtxn = self.env.read_txn()?;
         let mut results = Vec::new();
         let iter = db.iter(&rtxn)?;
         for item in iter {
             let (_, bytes) = item?;
-            let msg = M::decode(bytes).map_err(|e| TemplateStoreError::Serialization(e.to_string()))?;
+            let msg =
+                M::decode(bytes).map_err(|e| TemplateStoreError::Serialization(e.to_string()))?;
             results.push(msg);
         }
         Ok(results)
     }
 
     /// Delete a template by key
-    pub fn delete(&self, db: Database<heed::types::Str, heed::types::Bytes>, key: &str) -> Result<bool, TemplateStoreError> {
+    pub fn delete(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+        key: &str,
+    ) -> Result<bool, TemplateStoreError> {
         let mut wtxn = self.env.write_txn()?;
         let deleted = db.delete(&mut wtxn, key)?;
         wtxn.commit()?;
@@ -156,7 +197,10 @@ impl LmdbTemplateStore {
     }
 
     /// Count entries in a database
-    pub fn count(&self, db: Database<heed::types::Str, heed::types::Bytes>) -> Result<usize, TemplateStoreError> {
+    pub fn count(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+    ) -> Result<usize, TemplateStoreError> {
         let rtxn = self.env.read_txn()?;
         let count = db.len(&rtxn)? as usize;
         Ok(count)
@@ -167,7 +211,11 @@ impl LmdbTemplateStore {
     // ========================================================================
 
     /// Bulk insert templates (single transaction for performance)
-    pub fn bulk_put<M: Message>(&self, db: Database<heed::types::Str, heed::types::Bytes>, items: &[(&str, &M)]) -> Result<usize, TemplateStoreError> {
+    pub fn bulk_put<M: Message>(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+        items: &[(&str, &M)],
+    ) -> Result<usize, TemplateStoreError> {
         let mut wtxn = self.env.write_txn()?;
         let mut count = 0;
         for (key, value) in items {
@@ -181,7 +229,10 @@ impl LmdbTemplateStore {
     }
 
     /// Clear all data in a database
-    pub fn clear(&self, db: Database<heed::types::Str, heed::types::Bytes>) -> Result<(), TemplateStoreError> {
+    pub fn clear(
+        &self,
+        db: Database<heed::types::Str, heed::types::Bytes>,
+    ) -> Result<(), TemplateStoreError> {
         let mut wtxn = self.env.write_txn()?;
         db.clear(&mut wtxn)?;
         wtxn.commit()?;
@@ -193,62 +244,98 @@ impl LmdbTemplateStore {
     // ========================================================================
 
     /// Store a monster template
-    pub fn put_monster(&self, template: &crate::proto::tower::entities::MonsterTemplate) -> Result<(), TemplateStoreError> {
+    pub fn put_monster(
+        &self,
+        template: &crate::proto::tower::entities::MonsterTemplate,
+    ) -> Result<(), TemplateStoreError> {
         self.put(self.monsters, &template.id, template)
     }
 
     /// Get a monster template by ID
-    pub fn get_monster(&self, id: &str) -> Result<Option<crate::proto::tower::entities::MonsterTemplate>, TemplateStoreError> {
+    pub fn get_monster(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::proto::tower::entities::MonsterTemplate>, TemplateStoreError> {
         self.get(self.monsters, id)
     }
 
     /// Store an item template
-    pub fn put_item(&self, template: &crate::proto::tower::entities::ItemTemplate) -> Result<(), TemplateStoreError> {
+    pub fn put_item(
+        &self,
+        template: &crate::proto::tower::entities::ItemTemplate,
+    ) -> Result<(), TemplateStoreError> {
         self.put(self.items, &template.id, template)
     }
 
     /// Get an item template by ID
-    pub fn get_item(&self, id: &str) -> Result<Option<crate::proto::tower::entities::ItemTemplate>, TemplateStoreError> {
+    pub fn get_item(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::proto::tower::entities::ItemTemplate>, TemplateStoreError> {
         self.get(self.items, id)
     }
 
     /// Store an ability template
-    pub fn put_ability(&self, template: &crate::proto::tower::entities::AbilityTemplate) -> Result<(), TemplateStoreError> {
+    pub fn put_ability(
+        &self,
+        template: &crate::proto::tower::entities::AbilityTemplate,
+    ) -> Result<(), TemplateStoreError> {
         self.put(self.abilities, &template.id, template)
     }
 
     /// Get an ability template by ID
-    pub fn get_ability(&self, id: &str) -> Result<Option<crate::proto::tower::entities::AbilityTemplate>, TemplateStoreError> {
+    pub fn get_ability(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::proto::tower::entities::AbilityTemplate>, TemplateStoreError> {
         self.get(self.abilities, id)
     }
 
     /// Store a crafting recipe
-    pub fn put_recipe(&self, recipe: &crate::proto::tower::economy::CraftingRecipe) -> Result<(), TemplateStoreError> {
+    pub fn put_recipe(
+        &self,
+        recipe: &crate::proto::tower::economy::CraftingRecipe,
+    ) -> Result<(), TemplateStoreError> {
         self.put(self.recipes, &recipe.id, recipe)
     }
 
     /// Get a crafting recipe by ID
-    pub fn get_recipe(&self, id: &str) -> Result<Option<crate::proto::tower::economy::CraftingRecipe>, TemplateStoreError> {
+    pub fn get_recipe(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::proto::tower::economy::CraftingRecipe>, TemplateStoreError> {
         self.get(self.recipes, id)
     }
 
     /// Store a quest template
-    pub fn put_quest(&self, template: &crate::proto::tower::quests::QuestTemplate) -> Result<(), TemplateStoreError> {
+    pub fn put_quest(
+        &self,
+        template: &crate::proto::tower::quests::QuestTemplate,
+    ) -> Result<(), TemplateStoreError> {
         self.put(self.quests, &template.id, template)
     }
 
     /// Get a quest template by ID
-    pub fn get_quest(&self, id: &str) -> Result<Option<crate::proto::tower::quests::QuestTemplate>, TemplateStoreError> {
+    pub fn get_quest(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::proto::tower::quests::QuestTemplate>, TemplateStoreError> {
         self.get(self.quests, id)
     }
 
     /// Store a loot table
-    pub fn put_loot_table(&self, table: &crate::proto::tower::entities::LootTable) -> Result<(), TemplateStoreError> {
+    pub fn put_loot_table(
+        &self,
+        table: &crate::proto::tower::entities::LootTable,
+    ) -> Result<(), TemplateStoreError> {
         self.put(self.loot_tables, &table.id, table)
     }
 
     /// Get a loot table by ID
-    pub fn get_loot_table(&self, id: &str) -> Result<Option<crate::proto::tower::entities::LootTable>, TemplateStoreError> {
+    pub fn get_loot_table(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::proto::tower::entities::LootTable>, TemplateStoreError> {
         self.get(self.loot_tables, id)
     }
 
@@ -291,9 +378,18 @@ pub struct TemplateStoreStats {
 impl TemplateStoreStats {
     /// Total number of templates across all databases
     pub fn total(&self) -> usize {
-        self.monsters + self.items + self.abilities + self.recipes
-            + self.quests + self.factions + self.loot_tables + self.item_sets
-            + self.gems + self.npcs + self.achievements + self.seasons
+        self.monsters
+            + self.items
+            + self.abilities
+            + self.recipes
+            + self.quests
+            + self.factions
+            + self.loot_tables
+            + self.item_sets
+            + self.gems
+            + self.npcs
+            + self.achievements
+            + self.seasons
     }
 
     /// Human-readable summary
@@ -313,9 +409,18 @@ impl TemplateStoreStats {
              - Achievements: {}\n\
              - Seasons:      {}",
             self.total(),
-            self.monsters, self.items, self.abilities, self.recipes,
-            self.quests, self.factions, self.loot_tables, self.item_sets,
-            self.gems, self.npcs, self.achievements, self.seasons,
+            self.monsters,
+            self.items,
+            self.abilities,
+            self.recipes,
+            self.quests,
+            self.factions,
+            self.loot_tables,
+            self.item_sets,
+            self.gems,
+            self.npcs,
+            self.achievements,
+            self.seasons,
         )
     }
 }
@@ -337,7 +442,8 @@ mod tests {
 
     #[test]
     fn test_monster_template_crud() {
-        let temp_dir = std::env::temp_dir().join(format!("tower_monster_test_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("tower_monster_test_{}", std::process::id()));
         let store = LmdbTemplateStore::new(&temp_dir, 10 * 1024 * 1024).unwrap();
 
         // Create monster template
@@ -439,7 +545,8 @@ mod tests {
 
     #[test]
     fn test_store_stats() {
-        let temp_dir = std::env::temp_dir().join(format!("tower_stats_test_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("tower_stats_test_{}", std::process::id()));
         let store = LmdbTemplateStore::new(&temp_dir, 10 * 1024 * 1024).unwrap();
 
         // Add some templates

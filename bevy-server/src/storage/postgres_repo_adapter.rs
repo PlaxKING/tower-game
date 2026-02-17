@@ -9,11 +9,11 @@ use std::sync::Arc;
 use super::postgres::PostgresStore;
 use super::repository::*;
 
-use crate::proto::tower::game;
-use crate::proto::tower::entities;
 use crate::proto::tower::economy;
-use crate::proto::tower::social;
+use crate::proto::tower::entities;
+use crate::proto::tower::game;
 use crate::proto::tower::quests;
+use crate::proto::tower::social;
 
 // ============================================================================
 // Type Conversion Helpers
@@ -134,13 +134,13 @@ fn row_to_guild_member(row: &super::postgres::GuildMemberRow) -> social::GuildMe
 fn row_to_player_quest(row: &super::postgres::QuestProgressRow) -> quests::PlayerQuest {
     let objectives = if let Some(ref obj_json) = row.objectives {
         if let Some(arr) = obj_json.as_array() {
-            arr.iter().map(|o| {
-                quests::ObjectiveProgress {
+            arr.iter()
+                .map(|o| quests::ObjectiveProgress {
                     current_count: o.get("current").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
                     is_complete: o.get("complete").and_then(|v| v.as_bool()).unwrap_or(false),
                     ..Default::default()
-                }
-            }).collect()
+                })
+                .collect()
         } else {
             vec![]
         }
@@ -213,32 +213,35 @@ impl PlayerRepo for PgPlayerRepo {
     }
 
     async fn create(&self, player: &entities::PlayerProfile) -> RepoResult<u64> {
-        let id = self.store.create_player(
-            &player.username,
-            "",  // password_hash handled by auth layer
-            player.base_str as i16,
-            player.base_dex as i16,
-            player.base_int as i16,
-            player.base_vit as i16,
-            player.base_luk as i16,
-        ).await?;
+        let id = self
+            .store
+            .create_player(
+                &player.username,
+                "", // password_hash handled by auth layer
+                player.base_str as i16,
+                player.base_dex as i16,
+                player.base_int as i16,
+                player.base_vit as i16,
+                player.base_luk as i16,
+            )
+            .await?;
         Ok(id as u64)
     }
 
     async fn update(&self, player: &entities::PlayerProfile) -> RepoResult<()> {
         let pos = player.position.as_ref();
-        self.store.update_player_position(
-            player.id as i64,
-            player.floor_id as i32,
-            pos.map(|p| p.x).unwrap_or(0.0),
-            pos.map(|p| p.y).unwrap_or(0.0),
-            pos.map(|p| p.z).unwrap_or(0.0),
-        ).await?;
-        self.store.update_player_health(
-            player.id as i64,
-            player.health,
-            player.is_alive,
-        ).await?;
+        self.store
+            .update_player_position(
+                player.id as i64,
+                player.floor_id as i32,
+                pos.map(|p| p.x).unwrap_or(0.0),
+                pos.map(|p| p.y).unwrap_or(0.0),
+                pos.map(|p| p.z).unwrap_or(0.0),
+            )
+            .await?;
+        self.store
+            .update_player_health(player.id as i64, player.health, player.is_alive)
+            .await?;
         Ok(())
     }
 
@@ -247,13 +250,24 @@ impl PlayerRepo for PgPlayerRepo {
         Ok(())
     }
 
-    async fn update_position(&self, id: u64, floor_id: u32, x: f32, y: f32, z: f32) -> RepoResult<()> {
-        self.store.update_player_position(id as i64, floor_id as i32, x, y, z).await?;
+    async fn update_position(
+        &self,
+        id: u64,
+        floor_id: u32,
+        x: f32,
+        y: f32,
+        z: f32,
+    ) -> RepoResult<()> {
+        self.store
+            .update_player_position(id as i64, floor_id as i32, x, y, z)
+            .await?;
         Ok(())
     }
 
     async fn update_health(&self, id: u64, health: f32) -> RepoResult<()> {
-        self.store.update_player_health(id as i64, health, health > 0.0).await?;
+        self.store
+            .update_player_health(id as i64, health, health > 0.0)
+            .await?;
         Ok(())
     }
 
@@ -279,23 +293,40 @@ impl PgMasteryRepo {
 
 #[async_trait]
 impl MasteryRepo for PgMasteryRepo {
-    async fn get(&self, player_id: u64, domain: &str) -> RepoResult<Option<entities::MasteryProgress>> {
+    async fn get(
+        &self,
+        player_id: u64,
+        domain: &str,
+    ) -> RepoResult<Option<entities::MasteryProgress>> {
         let row = self.store.get_mastery(player_id as i64, domain).await?;
         Ok(row.as_ref().map(row_to_mastery))
     }
 
-    async fn get_all_for_player(&self, player_id: u64) -> RepoResult<Vec<entities::MasteryProgress>> {
+    async fn get_all_for_player(
+        &self,
+        player_id: u64,
+    ) -> RepoResult<Vec<entities::MasteryProgress>> {
         let rows = self.store.get_all_mastery(player_id as i64).await?;
         Ok(rows.iter().map(row_to_mastery).collect())
     }
 
-    async fn add_experience(&self, player_id: u64, domain: &str, exp: u64) -> RepoResult<entities::MasteryProgress> {
-        let row = self.store.add_mastery_experience(player_id as i64, domain, exp as i64).await?;
+    async fn add_experience(
+        &self,
+        player_id: u64,
+        domain: &str,
+        exp: u64,
+    ) -> RepoResult<entities::MasteryProgress> {
+        let row = self
+            .store
+            .add_mastery_experience(player_id as i64, domain, exp as i64)
+            .await?;
         Ok(row_to_mastery(&row))
     }
 
     async fn set_specialization(&self, player_id: u64, domain: &str, spec: &str) -> RepoResult<()> {
-        self.store.set_mastery_specialization(player_id as i64, domain, spec).await?;
+        self.store
+            .set_mastery_specialization(player_id as i64, domain, spec)
+            .await?;
         Ok(())
     }
 }
@@ -332,7 +363,7 @@ impl InventoryRepo for PgInventoryRepo {
             "SELECT id, player_id, item_template_id, quantity, slot_type, slot_index,
                     instance_id, durability, enhancement, sockets, rolled_effects
              FROM inventory WHERE player_id = $1 AND slot_type = 2
-             ORDER BY slot_index"
+             ORDER BY slot_index",
         )
         .bind(player_id as i64)
         .fetch_all(self.store.pool())
@@ -340,18 +371,35 @@ impl InventoryRepo for PgInventoryRepo {
         Ok(rows.iter().map(row_to_inventory_slot).collect())
     }
 
-    async fn add_item(&self, player_id: u64, item_template_id: &str, quantity: u32) -> RepoResult<u64> {
-        let id = self.store.add_item(player_id as i64, item_template_id, quantity as i32, 0).await?;
+    async fn add_item(
+        &self,
+        player_id: u64,
+        item_template_id: &str,
+        quantity: u32,
+    ) -> RepoResult<u64> {
+        let id = self
+            .store
+            .add_item(player_id as i64, item_template_id, quantity as i32, 0)
+            .await?;
         Ok(id as u64)
     }
 
     async fn remove_item(&self, slot_id: u64, quantity: u32) -> RepoResult<()> {
-        self.store.remove_item(slot_id as i64, quantity as i32).await?;
+        self.store
+            .remove_item(slot_id as i64, quantity as i32)
+            .await?;
         Ok(())
     }
 
-    async fn equip_item(&self, player_id: u64, slot_id: u64, equipment_slot: i32) -> RepoResult<()> {
-        self.store.equip_item(player_id as i64, slot_id as i64, equipment_slot as i16).await?;
+    async fn equip_item(
+        &self,
+        player_id: u64,
+        slot_id: u64,
+        equipment_slot: i32,
+    ) -> RepoResult<()> {
+        self.store
+            .equip_item(player_id as i64, slot_id as i64, equipment_slot as i16)
+            .await?;
         Ok(())
     }
 
@@ -406,12 +454,17 @@ impl WalletRepo for PgWalletRepo {
     }
 
     async fn remove_gold(&self, player_id: u64, amount: u64) -> RepoResult<u64> {
-        let new_gold = self.store.remove_gold(player_id as i64, amount as i64).await?;
+        let new_gold = self
+            .store
+            .remove_gold(player_id as i64, amount as i64)
+            .await?;
         Ok(new_gold as u64)
     }
 
     async fn transfer_gold(&self, from: u64, to: u64, amount: u64) -> RepoResult<()> {
-        self.store.transfer_gold(from as i64, to as i64, amount as i64).await?;
+        self.store
+            .transfer_gold(from as i64, to as i64, amount as i64)
+            .await?;
         Ok(())
     }
 }
@@ -441,7 +494,7 @@ impl GuildRepo for PgGuildRepo {
         let row: Option<super::postgres::GuildRow> = sqlx::query_as(
             "SELECT id, name, tag, leader_id, created_at, level, experience,
                     max_members, description, motd, is_recruiting, bank_gold
-             FROM guilds WHERE name = $1"
+             FROM guilds WHERE name = $1",
         )
         .bind(name)
         .fetch_optional(self.store.pool())
@@ -450,22 +503,29 @@ impl GuildRepo for PgGuildRepo {
     }
 
     async fn create(&self, guild: &social::Guild) -> RepoResult<u64> {
-        let id = self.store.create_guild(
-            &guild.name,
-            &guild.tag,
-            guild.leader_id as i64,
-            &guild.description,
-        ).await?;
+        let id = self
+            .store
+            .create_guild(
+                &guild.name,
+                &guild.tag,
+                guild.leader_id as i64,
+                &guild.description,
+            )
+            .await?;
         Ok(id as u64)
     }
 
     async fn add_member(&self, guild_id: u64, player_id: u64, rank: i32) -> RepoResult<()> {
-        self.store.add_guild_member(guild_id as i64, player_id as i64, rank as i16).await?;
+        self.store
+            .add_guild_member(guild_id as i64, player_id as i64, rank as i16)
+            .await?;
         Ok(())
     }
 
     async fn remove_member(&self, guild_id: u64, player_id: u64) -> RepoResult<()> {
-        self.store.remove_guild_member(guild_id as i64, player_id as i64).await?;
+        self.store
+            .remove_guild_member(guild_id as i64, player_id as i64)
+            .await?;
         Ok(())
     }
 
@@ -475,14 +535,12 @@ impl GuildRepo for PgGuildRepo {
     }
 
     async fn update_rank(&self, guild_id: u64, player_id: u64, rank: i32) -> RepoResult<()> {
-        sqlx::query(
-            "UPDATE guild_members SET rank = $3 WHERE guild_id = $1 AND player_id = $2"
-        )
-        .bind(guild_id as i64)
-        .bind(player_id as i64)
-        .bind(rank as i16)
-        .execute(self.store.pool())
-        .await?;
+        sqlx::query("UPDATE guild_members SET rank = $3 WHERE guild_id = $1 AND player_id = $2")
+            .bind(guild_id as i64)
+            .bind(player_id as i64)
+            .bind(rank as i16)
+            .execute(self.store.pool())
+            .await?;
         Ok(())
     }
 }
@@ -533,19 +591,34 @@ impl QuestProgressRepo for PgQuestProgressRepo {
     }
 
     async fn start_quest(&self, player_id: u64, quest_id: &str) -> RepoResult<()> {
-        self.store.start_quest(player_id as i64, quest_id, 3).await?;
+        self.store
+            .start_quest(player_id as i64, quest_id, 3)
+            .await?;
         Ok(())
     }
 
-    async fn update_objective(&self, player_id: u64, quest_id: &str, objective_idx: u8, count: u32) -> RepoResult<()> {
-        self.store.update_quest_objective(
-            player_id as i64, quest_id, objective_idx as i32, count as i32
-        ).await?;
+    async fn update_objective(
+        &self,
+        player_id: u64,
+        quest_id: &str,
+        objective_idx: u8,
+        count: u32,
+    ) -> RepoResult<()> {
+        self.store
+            .update_quest_objective(
+                player_id as i64,
+                quest_id,
+                objective_idx as i32,
+                count as i32,
+            )
+            .await?;
         Ok(())
     }
 
     async fn complete_quest(&self, player_id: u64, quest_id: &str) -> RepoResult<()> {
-        self.store.complete_quest(player_id as i64, quest_id).await?;
+        self.store
+            .complete_quest(player_id as i64, quest_id)
+            .await?;
         Ok(())
     }
 }
@@ -571,7 +644,7 @@ impl AuctionRepo for PgAuctionRepo {
             "SELECT id, seller_id, item_template_id, quantity, buyout_price,
                     starting_bid, current_bid, highest_bidder,
                     created_at, expires_at, status, tax_rate
-             FROM auctions WHERE id = $1"
+             FROM auctions WHERE id = $1",
         )
         .bind(id as i64)
         .fetch_optional(self.store.pool())
@@ -590,7 +663,7 @@ impl AuctionRepo for PgAuctionRepo {
                     starting_bid, current_bid, highest_bidder,
                     created_at, expires_at, status, tax_rate
              FROM auctions WHERE seller_id = $1
-             ORDER BY created_at DESC"
+             ORDER BY created_at DESC",
         )
         .bind(seller_id as i64)
         .fetch_all(self.store.pool())
@@ -599,24 +672,31 @@ impl AuctionRepo for PgAuctionRepo {
     }
 
     async fn create(&self, listing: &economy::AuctionListing) -> RepoResult<u64> {
-        let id = self.store.create_auction(
-            listing.seller_id as i64,
-            &listing.item_template_id,
-            listing.quantity as i32,
-            listing.buyout_price as i64,
-            listing.starting_bid as i64,
-            24, // default 24h duration
-        ).await?;
+        let id = self
+            .store
+            .create_auction(
+                listing.seller_id as i64,
+                &listing.item_template_id,
+                listing.quantity as i32,
+                listing.buyout_price as i64,
+                listing.starting_bid as i64,
+                24, // default 24h duration
+            )
+            .await?;
         Ok(id as u64)
     }
 
     async fn place_bid(&self, auction_id: u64, bidder_id: u64, amount: u64) -> RepoResult<()> {
-        self.store.place_bid(auction_id as i64, bidder_id as i64, amount as i64).await?;
+        self.store
+            .place_bid(auction_id as i64, bidder_id as i64, amount as i64)
+            .await?;
         Ok(())
     }
 
     async fn buyout(&self, auction_id: u64, buyer_id: u64) -> RepoResult<()> {
-        self.store.buyout_auction(auction_id as i64, buyer_id as i64).await?;
+        self.store
+            .buyout_auction(auction_id as i64, buyer_id as i64)
+            .await?;
         Ok(())
     }
 
@@ -650,16 +730,26 @@ impl PgReputationRepo {
 
 #[async_trait]
 impl ReputationRepo for PgReputationRepo {
-    async fn get(&self, player_id: u64, faction_id: &str) -> RepoResult<Option<quests::PlayerReputation>> {
-        let row = self.store.get_reputation(player_id as i64, faction_id).await?;
+    async fn get(
+        &self,
+        player_id: u64,
+        faction_id: &str,
+    ) -> RepoResult<Option<quests::PlayerReputation>> {
+        let row = self
+            .store
+            .get_reputation(player_id as i64, faction_id)
+            .await?;
         Ok(row.as_ref().map(row_to_reputation))
     }
 
-    async fn get_all_for_player(&self, player_id: u64) -> RepoResult<Vec<quests::PlayerReputation>> {
+    async fn get_all_for_player(
+        &self,
+        player_id: u64,
+    ) -> RepoResult<Vec<quests::PlayerReputation>> {
         let rows: Vec<super::postgres::ReputationRow> = sqlx::query_as(
             "SELECT player_id, faction_id, reputation, standing
              FROM player_reputation WHERE player_id = $1
-             ORDER BY faction_id"
+             ORDER BY faction_id",
         )
         .bind(player_id as i64)
         .fetch_all(self.store.pool())
@@ -667,8 +757,16 @@ impl ReputationRepo for PgReputationRepo {
         Ok(rows.iter().map(row_to_reputation).collect())
     }
 
-    async fn add_reputation(&self, player_id: u64, faction_id: &str, amount: i32) -> RepoResult<quests::PlayerReputation> {
-        let row = self.store.add_reputation(player_id as i64, faction_id, amount).await?;
+    async fn add_reputation(
+        &self,
+        player_id: u64,
+        faction_id: &str,
+        amount: i32,
+    ) -> RepoResult<quests::PlayerReputation> {
+        let row = self
+            .store
+            .add_reputation(player_id as i64, faction_id, amount)
+            .await?;
         Ok(row_to_reputation(&row))
     }
 }

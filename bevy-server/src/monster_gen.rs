@@ -14,11 +14,11 @@
 //! Monsters inherit 70% of their floor's semantic tags, ensuring thematic coherence.
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::components::{Player, Monster};
-use crate::combat::{CombatState, EquippedWeapon, WeaponType, CombatEnergy};
+use crate::combat::{CombatEnergy, CombatState, EquippedWeapon, WeaponType};
+use crate::components::{Monster, Player};
 use crate::physics;
 
 // ============================================================================
@@ -37,11 +37,11 @@ pub enum MonsterSize {
 impl MonsterSize {
     fn from_hash(h: u64) -> Self {
         match h % 100 {
-            0..=10  => MonsterSize::Tiny,
+            0..=10 => MonsterSize::Tiny,
             11..=35 => MonsterSize::Small,
             36..=65 => MonsterSize::Medium,
             66..=85 => MonsterSize::Large,
-            _       => MonsterSize::Colossal,
+            _ => MonsterSize::Colossal,
         }
     }
 
@@ -146,10 +146,10 @@ impl CorruptionLevel {
         let corruption_bias = (floor as u64) / 20;
         let roll = (h % 100).saturating_add(corruption_bias);
         match roll {
-            0..=40  => CorruptionLevel::Pure,
+            0..=40 => CorruptionLevel::Pure,
             41..=65 => CorruptionLevel::Tainted,
             66..=85 => CorruptionLevel::Corrupted,
-            _       => CorruptionLevel::Abyssal,
+            _ => CorruptionLevel::Abyssal,
         }
     }
 
@@ -272,9 +272,15 @@ pub struct MonsterBlueprint {
 }
 
 /// Generate a monster blueprint deterministically from a seed and floor
-pub fn generate_blueprint(seed: u64, floor_id: u32, biome_tags: &[(String, f32)]) -> MonsterBlueprint {
+pub fn generate_blueprint(
+    seed: u64,
+    floor_id: u32,
+    biome_tags: &[(String, f32)],
+) -> MonsterBlueprint {
     // Use LCG-style hash for each trait axis
-    let h1 = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let h1 = seed
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     let h2 = h1.wrapping_mul(6364136223846793005).wrapping_add(1);
     let h3 = h2.wrapping_mul(6364136223846793005).wrapping_add(1);
     let h4 = h3.wrapping_mul(6364136223846793005).wrapping_add(1);
@@ -410,8 +416,8 @@ impl AiBehavior {
             0..=1 => AiBehavior::Passive,
             2..=4 => AiBehavior::Patrol,
             5..=7 => AiBehavior::Aggressive,
-            8     => AiBehavior::Ambush,
-            _     => AiBehavior::Guardian,
+            8 => AiBehavior::Ambush,
+            _ => AiBehavior::Guardian,
         }
     }
 }
@@ -517,9 +523,8 @@ pub fn update_monster_ai(
         }
 
         // Find nearest player
-        let (nearest_player_id, nearest_distance) = find_nearest_player(
-            &transform.translation, &players,
-        );
+        let (nearest_player_id, nearest_distance) =
+            find_nearest_player(&transform.translation, &players);
 
         // FSM transitions
         let new_state = match ai.state {
@@ -683,7 +688,8 @@ fn get_player_position(
     players: &Query<(&Player, &Transform), Without<MonsterAi>>,
 ) -> Option<Vec3> {
     let target = target_id?;
-    players.iter()
+    players
+        .iter()
         .find(|(p, _)| p.id == target)
         .map(|(_, t)| t.translation)
 }
@@ -720,44 +726,46 @@ pub fn spawn_monster_from_blueprint(
     blueprint: &MonsterBlueprint,
     position: Vec3,
 ) -> Entity {
-    let entity = commands.spawn((
-        Monster {
-            monster_type: blueprint.name.clone(),
-            position,
-            health: blueprint.max_health,
-            max_health: blueprint.max_health,
-        },
-        Transform::from_translation(position),
-        MonsterAi {
-            behavior: blueprint.ai_behavior,
-            state: AiState::Idle,
-            state_timer: 0.0,
-            home_position: position,
-            target_player: None,
-            aggro_range: blueprint.aggro_range,
-            leash_range: blueprint.leash_range,
-            attack_range: 2.5,
-            move_speed: blueprint.move_speed,
-            patrol_index: 0,
-            patrol_offsets: generate_patrol_offsets(blueprint.variant_id),
-            retreat_threshold: 0.2,
-            health_fraction: 1.0,
-        },
-        CombatState::default(),
-        EquippedWeapon {
-            weapon_type: WeaponType::Sword, // Monsters use generic melee
-            weapon_id: format!("monster_weapon_{}", blueprint.variant_id),
-            base_damage: blueprint.base_damage,
-            attack_speed: blueprint.move_speed / 3.0, // Faster monsters attack faster
-            range: 2.5,
-        },
-        CombatEnergy::default(),
-        MonsterSemanticTags {
-            tags: blueprint.semantic_tags.clone(),
-        },
-        // Physics collider — capsule sized by monster size
-        physics::monster_physics_bundle(blueprint.size),
-    )).id();
+    let entity = commands
+        .spawn((
+            Monster {
+                monster_type: blueprint.name.clone(),
+                position,
+                health: blueprint.max_health,
+                max_health: blueprint.max_health,
+            },
+            Transform::from_translation(position),
+            MonsterAi {
+                behavior: blueprint.ai_behavior,
+                state: AiState::Idle,
+                state_timer: 0.0,
+                home_position: position,
+                target_player: None,
+                aggro_range: blueprint.aggro_range,
+                leash_range: blueprint.leash_range,
+                attack_range: 2.5,
+                move_speed: blueprint.move_speed,
+                patrol_index: 0,
+                patrol_offsets: generate_patrol_offsets(blueprint.variant_id),
+                retreat_threshold: 0.2,
+                health_fraction: 1.0,
+            },
+            CombatState::default(),
+            EquippedWeapon {
+                weapon_type: WeaponType::Sword, // Monsters use generic melee
+                weapon_id: format!("monster_weapon_{}", blueprint.variant_id),
+                base_damage: blueprint.base_damage,
+                attack_speed: blueprint.move_speed / 3.0, // Faster monsters attack faster
+                range: 2.5,
+            },
+            CombatEnergy::default(),
+            MonsterSemanticTags {
+                tags: blueprint.semantic_tags.clone(),
+            },
+            // Physics collider — capsule sized by monster size
+            physics::monster_physics_bundle(blueprint.size),
+        ))
+        .id();
 
     entity
 }
@@ -818,10 +826,7 @@ mod tests {
 
     #[test]
     fn test_semantic_tag_inheritance() {
-        let biome = vec![
-            ("fire".to_string(), 0.9),
-            ("volcano".to_string(), 0.8),
-        ];
+        let biome = vec![("fire".to_string(), 0.9), ("volcano".to_string(), 0.8)];
         let bp = generate_blueprint(42, 5, &biome);
 
         // Should have inherited floor tags at 70% weight
@@ -877,10 +882,16 @@ mod tests {
             let h = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
             let h = h.wrapping_mul(6364136223846793005).wrapping_add(1);
             let h = h.wrapping_mul(6364136223846793005).wrapping_add(1);
-            if matches!(CorruptionLevel::from_hash(h >> 32, 1), CorruptionLevel::Corrupted | CorruptionLevel::Abyssal) {
+            if matches!(
+                CorruptionLevel::from_hash(h >> 32, 1),
+                CorruptionLevel::Corrupted | CorruptionLevel::Abyssal
+            ) {
                 high_corruption_count_f1 += 1;
             }
-            if matches!(CorruptionLevel::from_hash(h >> 32, 100), CorruptionLevel::Corrupted | CorruptionLevel::Abyssal) {
+            if matches!(
+                CorruptionLevel::from_hash(h >> 32, 100),
+                CorruptionLevel::Corrupted | CorruptionLevel::Abyssal
+            ) {
                 high_corruption_count_f100 += 1;
             }
         }

@@ -6,16 +6,16 @@
 //!
 //! Requires: `docker compose up -d postgres` (PostgreSQL on port 5433)
 
-use std::sync::Arc;
-use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
-use tower_bevy_server::storage::seed_data;
-use tower_bevy_server::ecs_bridge;
-use tower_bevy_server::api;
-use tower_bevy_server::metrics::ServerMetrics;
-use serde_json::Value;
 use axum::body::Body;
 use http::Request;
+use serde_json::Value;
+use std::sync::Arc;
 use tower::ServiceExt;
+use tower_bevy_server::api;
+use tower_bevy_server::ecs_bridge;
+use tower_bevy_server::metrics::ServerMetrics;
+use tower_bevy_server::storage::lmdb_templates::LmdbTemplateStore;
+use tower_bevy_server::storage::seed_data;
 
 /// Helper: create a temporary LMDB + API router for testing.
 /// Returns (router, temp_dir) — temp_dir must stay alive for the duration.
@@ -71,7 +71,9 @@ async fn test_health_endpoint() {
     let resp = router.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), 200);
 
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(json["status"], "ok");
     assert!(!json["version"].as_str().unwrap().is_empty());
@@ -95,7 +97,9 @@ async fn test_generate_floor_endpoint() {
     let resp = router.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), 200);
 
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(json["floor_id"], 1);
@@ -137,8 +141,12 @@ async fn test_generate_floor_deterministic() {
     let resp1 = router1.oneshot(req1).await.unwrap();
     let resp2 = router2.oneshot(req2).await.unwrap();
 
-    let body1 = axum::body::to_bytes(resp1.into_body(), usize::MAX).await.unwrap();
-    let body2 = axum::body::to_bytes(resp2.into_body(), usize::MAX).await.unwrap();
+    let body1 = axum::body::to_bytes(resp1.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body2 = axum::body::to_bytes(resp2.into_body(), usize::MAX)
+        .await
+        .unwrap();
 
     let json1: Value = serde_json::from_slice(&body1).unwrap();
     let json2: Value = serde_json::from_slice(&body2).unwrap();
@@ -163,7 +171,9 @@ async fn test_generate_loot_endpoint() {
     let resp = router.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), 200);
 
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json["items"].is_array());
@@ -183,7 +193,9 @@ async fn test_world_cycle_endpoint() {
     let resp = router.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), 200);
 
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json["cycle_name"].is_string());
@@ -208,7 +220,9 @@ async fn test_spawn_monsters_endpoint() {
     let resp = router.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), 200);
 
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json: Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json["monsters"].is_array());

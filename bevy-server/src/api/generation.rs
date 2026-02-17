@@ -6,22 +6,37 @@
 //! - POST /tower.GenerationService/SpawnMonsters
 //! - POST /tower.GenerationService/QuerySemanticTags
 
-use axum::{Router, Json, extract::State, routing::post};
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use super::ApiState;
+use crate::destruction::FloorDestructionManager;
 use crate::proto::tower::entities::{LootTable, MonsterTemplate};
 use crate::proto::tower::game::TagPair as ProtoTagPair;
-use crate::destruction::FloorDestructionManager;
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
-        .route("/tower.GenerationService/GenerateFloor", post(generate_floor))
+        .route(
+            "/tower.GenerationService/GenerateFloor",
+            post(generate_floor),
+        )
         .route("/tower.GenerationService/GenerateLoot", post(generate_loot))
-        .route("/tower.GenerationService/SpawnMonsters", post(spawn_monsters))
-        .route("/tower.GenerationService/QuerySemanticTags", post(query_semantic_tags))
-        .route("/tower.GenerationService/GenerateDestructibles", post(generate_destructibles))
-        .route("/tower.GenerationService/GenerateMonsters", post(generate_monsters))
+        .route(
+            "/tower.GenerationService/SpawnMonsters",
+            post(spawn_monsters),
+        )
+        .route(
+            "/tower.GenerationService/QuerySemanticTags",
+            post(query_semantic_tags),
+        )
+        .route(
+            "/tower.GenerationService/GenerateDestructibles",
+            post(generate_destructibles),
+        )
+        .route(
+            "/tower.GenerationService/GenerateMonsters",
+            post(generate_monsters),
+        )
 }
 
 // ============================================================================
@@ -143,7 +158,9 @@ async fn generate_floor(
     let mut rng = seed;
     for y in 0..size as i32 {
         for x in 0..size as i32 {
-            rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            rng = rng
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             let tile_type = ((rng >> 33) % 5) as u32;
             tiles.push(TileData {
                 tile_type,
@@ -174,11 +191,15 @@ async fn generate_loot(
     Json(req): Json<LootRequest>,
 ) -> Json<LootResponse> {
     // Look up loot tables from LMDB
-    let all_tables: Vec<LootTable> = state.lmdb.get_all(state.lmdb.loot_tables)
+    let all_tables: Vec<LootTable> = state
+        .lmdb
+        .get_all(state.lmdb.loot_tables)
         .unwrap_or_default();
 
     let mut items = Vec::new();
-    let mut rng = req.source_entity_id.wrapping_mul(req.player_id.wrapping_add(1));
+    let mut rng = req
+        .source_entity_id
+        .wrapping_mul(req.player_id.wrapping_add(1));
 
     for table in &all_tables {
         for entry in &table.entries {
@@ -208,7 +229,9 @@ async fn generate_loot(
                 });
             }
         }
-        if !items.is_empty() { break; } // Use first matching table
+        if !items.is_empty() {
+            break;
+        } // Use first matching table
     }
 
     Json(LootResponse { items })
@@ -219,17 +242,18 @@ async fn spawn_monsters(
     Json(req): Json<SpawnMonstersRequest>,
 ) -> Json<SpawnMonstersResponse> {
     // Get monster templates from LMDB
-    let all_monsters: Vec<MonsterTemplate> = state.lmdb.get_all(state.lmdb.monsters)
-        .unwrap_or_default();
+    let all_monsters: Vec<MonsterTemplate> =
+        state.lmdb.get_all(state.lmdb.monsters).unwrap_or_default();
 
     // Filter monsters by tier based on floor
     let tier = (req.floor_id / 10).min(5);
-    let candidates: Vec<&MonsterTemplate> = all_monsters.iter()
-        .filter(|m| m.tier <= tier + 1)
-        .collect();
+    let candidates: Vec<&MonsterTemplate> =
+        all_monsters.iter().filter(|m| m.tier <= tier + 1).collect();
 
     let mut spawns = Vec::new();
-    let mut rng = req.tower_seed.wrapping_add(req.floor_id as u64 * 1000 + req.room_id as u64);
+    let mut rng = req
+        .tower_seed
+        .wrapping_add(req.floor_id as u64 * 1000 + req.room_id as u64);
     let spawn_count = 3 + (rng % 5) as usize;
 
     for _i in 0..spawn_count.min(candidates.len()) {
@@ -257,13 +281,15 @@ async fn query_semantic_tags(
     Json(req): Json<SemanticQueryRequest>,
 ) -> Json<SemanticQueryResponse> {
     // Search all monster templates for semantic similarity
-    let all_monsters: Vec<MonsterTemplate> = state.lmdb.get_all(state.lmdb.monsters)
-        .unwrap_or_default();
+    let all_monsters: Vec<MonsterTemplate> =
+        state.lmdb.get_all(state.lmdb.monsters).unwrap_or_default();
 
     let mut matches = Vec::new();
 
     for monster in &all_monsters {
-        let proto_tags: Vec<&ProtoTagPair> = monster.semantic_tags.as_ref()
+        let proto_tags: Vec<&ProtoTagPair> = monster
+            .semantic_tags
+            .as_ref()
             .map(|st| st.tags.iter().collect())
             .unwrap_or_default();
         let similarity = compute_similarity(&req.query_tags, &proto_tags);
@@ -272,15 +298,23 @@ async fn query_semantic_tags(
                 entity_id: monster.id.clone(),
                 entity_type: "monster".to_string(),
                 similarity,
-                tags: proto_tags.iter()
-                    .map(|t| TagPair { tag: t.tag.clone(), weight: t.weight })
+                tags: proto_tags
+                    .iter()
+                    .map(|t| TagPair {
+                        tag: t.tag.clone(),
+                        weight: t.weight,
+                    })
                     .collect(),
             });
         }
     }
 
     // Sort by similarity descending
-    matches.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap_or(std::cmp::Ordering::Equal));
+    matches.sort_by(|a, b| {
+        b.similarity
+            .partial_cmp(&a.similarity)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     matches.truncate(req.max_results as usize);
 
     Json(SemanticQueryResponse { matches })
@@ -302,26 +336,48 @@ fn determine_biome(floor_id: u32) -> u32 {
 }
 
 fn generate_floor_tags(floor_id: u32, biome_id: u32, _seed: u64) -> Vec<TagPair> {
-    let mut tags = vec![
-        TagPair { tag: format!("floor_{}", floor_id), weight: 1.0 },
-    ];
+    let mut tags = vec![TagPair {
+        tag: format!("floor_{}", floor_id),
+        weight: 1.0,
+    }];
 
     match biome_id {
-        1 => tags.push(TagPair { tag: "dungeon".into(), weight: 0.8 }),
-        2 => tags.push(TagPair { tag: "nature".into(), weight: 0.9 }),
+        1 => tags.push(TagPair {
+            tag: "dungeon".into(),
+            weight: 0.8,
+        }),
+        2 => tags.push(TagPair {
+            tag: "nature".into(),
+            weight: 0.9,
+        }),
         3 => {
-            tags.push(TagPair { tag: "fire".into(), weight: 0.9 });
-            tags.push(TagPair { tag: "volcanic".into(), weight: 0.7 });
+            tags.push(TagPair {
+                tag: "fire".into(),
+                weight: 0.9,
+            });
+            tags.push(TagPair {
+                tag: "volcanic".into(),
+                weight: 0.7,
+            });
         }
-        4 => tags.push(TagPair { tag: "ice".into(), weight: 0.9 }),
-        5 => tags.push(TagPair { tag: "corruption".into(), weight: 0.8 }),
+        4 => tags.push(TagPair {
+            tag: "ice".into(),
+            weight: 0.9,
+        }),
+        5 => tags.push(TagPair {
+            tag: "corruption".into(),
+            weight: 0.8,
+        }),
         _ => {}
     }
 
     // Corruption increases with floor depth
     let corruption = (floor_id as f32 / 100.0).min(1.0);
     if corruption > 0.1 {
-        tags.push(TagPair { tag: "corruption".into(), weight: corruption });
+        tags.push(TagPair {
+            tag: "corruption".into(),
+            weight: corruption,
+        });
     }
 
     tags
@@ -350,7 +406,11 @@ fn compute_similarity(query: &[TagPair], entity_tags: &[&ProtoTagPair]) -> f32 {
     }
 
     let mag = (mag_q.sqrt()) * (mag_e.sqrt());
-    if mag < 0.0001 { 0.0 } else { dot / mag }
+    if mag < 0.0001 {
+        0.0
+    } else {
+        dot / mag
+    }
 }
 
 // ============================================================================
@@ -402,7 +462,9 @@ async fn generate_destructibles(
     let mut spawned = Vec::new();
 
     for _ in 0..total_spawn_count {
-        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        rng = rng
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let template_idx = (rng as usize) % templates_for_biome.len();
         let template_id = &templates_for_biome[template_idx];
 
@@ -418,7 +480,12 @@ async fn generate_destructibles(
 
         if let Some(entity_id) = manager.spawn(template_id, req.floor_id, pos) {
             let template = manager.templates.get(template_id.as_str()).unwrap();
-            let d = manager.floors.get(&req.floor_id).unwrap().get(&entity_id).unwrap();
+            let d = manager
+                .floors
+                .get(&req.floor_id)
+                .unwrap()
+                .get(&entity_id)
+                .unwrap();
 
             spawned.push(SpawnedDestructible {
                 entity_id,
@@ -429,8 +496,13 @@ async fn generate_destructibles(
                 fragment_count: template.fragment_count,
                 total_hp: d.total_hp(),
                 category: format!("{:?}", template.category),
-                semantic_tags: template.semantic_tags.iter()
-                    .map(|(t, w)| TagPair { tag: t.clone(), weight: *w })
+                semantic_tags: template
+                    .semantic_tags
+                    .iter()
+                    .map(|(t, w)| TagPair {
+                        tag: t.clone(),
+                        weight: *w,
+                    })
                     .collect(),
             });
         }
@@ -453,28 +525,33 @@ fn select_templates_for_biome(biome_id: u32, biome_tags: &[TagPair]) -> Vec<Stri
     templates.push("barrel_metal".to_string());
 
     match biome_id {
-        1 => { // Dungeon
+        1 => {
+            // Dungeon
             templates.push("wall_stone_3m".to_string());
             templates.push("pillar_stone".to_string());
             templates.push("crystal_cluster".to_string());
         }
-        2 => { // Forest
+        2 => {
+            // Forest
             templates.push("tree_forest".to_string());
             templates.push("tree_forest".to_string()); // Higher weight
             templates.push("wall_wood_3m".to_string());
             templates.push("bridge_wood_section".to_string());
         }
-        3 => { // Volcano
+        3 => {
+            // Volcano
             templates.push("wall_stone_3m".to_string());
             templates.push("pillar_stone".to_string());
             templates.push("crystal_cluster".to_string());
         }
-        4 => { // Ice
+        4 => {
+            // Ice
             templates.push("wall_stone_3m".to_string());
             templates.push("crystal_cluster".to_string());
             templates.push("bridge_wood_section".to_string());
         }
-        5 => { // Corruption
+        5 => {
+            // Corruption
             templates.push("tree_corrupted".to_string());
             templates.push("corruption_node".to_string());
             templates.push("crystal_cluster".to_string());
@@ -533,7 +610,9 @@ async fn generate_monsters(
     State(_state): State<ApiState>,
     Json(req): Json<GenerateMonstersRequest>,
 ) -> Json<GenerateMonstersResponse> {
-    let biome: Vec<(String, f32)> = req.biome_tags.iter()
+    let biome: Vec<(String, f32)> = req
+        .biome_tags
+        .iter()
         .map(|t| (t.tag.clone(), t.weight))
         .collect();
 
@@ -543,38 +622,54 @@ async fn generate_monsters(
     });
 
     let blueprints = crate::monster_gen::generate_room_monsters(
-        req.tower_seed, req.floor_id, req.room_id, &biome, count,
+        req.tower_seed,
+        req.floor_id,
+        req.room_id,
+        &biome,
+        count,
     );
 
-    let mut rng = req.tower_seed
+    let mut rng = req
+        .tower_seed
         .wrapping_mul(req.floor_id as u64 + 1)
         .wrapping_mul(req.room_id as u64 + 1);
 
-    let monsters: Vec<GeneratedMonster> = blueprints.iter().map(|bp| {
-        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
-        let x = ((rng >> 33) % 20) as f32 - 10.0;
-        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
-        let z = ((rng >> 33) % 20) as f32 - 10.0;
+    let monsters: Vec<GeneratedMonster> = blueprints
+        .iter()
+        .map(|bp| {
+            rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let x = ((rng >> 33) % 20) as f32 - 10.0;
+            rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let z = ((rng >> 33) % 20) as f32 - 10.0;
 
-        GeneratedMonster {
-            variant_id: bp.variant_id,
-            name: bp.name.clone(),
-            size: format!("{:?}", bp.size),
-            element: format!("{:?}", bp.element),
-            corruption: format!("{:?}", bp.corruption),
-            body_type: format!("{:?}", bp.body_type),
-            max_health: bp.max_health,
-            base_damage: bp.base_damage,
-            move_speed: bp.move_speed,
-            ai_behavior: format!("{:?}", bp.ai_behavior),
-            position: [x, 0.0, z],
-            semantic_tags: bp.semantic_tags.iter()
-                .map(|(tag, weight)| TagPair { tag: tag.clone(), weight: *weight })
-                .collect(),
-            loot_tier: bp.loot_tier,
-        }
-    }).collect();
+            GeneratedMonster {
+                variant_id: bp.variant_id,
+                name: bp.name.clone(),
+                size: format!("{:?}", bp.size),
+                element: format!("{:?}", bp.element),
+                corruption: format!("{:?}", bp.corruption),
+                body_type: format!("{:?}", bp.body_type),
+                max_health: bp.max_health,
+                base_damage: bp.base_damage,
+                move_speed: bp.move_speed,
+                ai_behavior: format!("{:?}", bp.ai_behavior),
+                position: [x, 0.0, z],
+                semantic_tags: bp
+                    .semantic_tags
+                    .iter()
+                    .map(|(tag, weight)| TagPair {
+                        tag: tag.clone(),
+                        weight: *weight,
+                    })
+                    .collect(),
+                loot_tier: bp.loot_tier,
+            }
+        })
+        .collect();
 
     let total_count = monsters.len();
-    Json(GenerateMonstersResponse { monsters, total_count })
+    Json(GenerateMonstersResponse {
+        monsters,
+        total_count,
+    })
 }

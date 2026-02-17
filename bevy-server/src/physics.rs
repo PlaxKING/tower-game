@@ -48,7 +48,10 @@ pub fn player_physics_bundle() -> (RigidBody, Collider, CollisionGroups) {
         Collider::capsule_y(0.9, 0.4), // 1.8m + 0.8m diameter
         CollisionGroups::new(
             PhysicsLayers::PLAYER,
-            PhysicsLayers::ENEMY | PhysicsLayers::WALL | PhysicsLayers::HAZARD | PhysicsLayers::PROJECTILE,
+            PhysicsLayers::ENEMY
+                | PhysicsLayers::WALL
+                | PhysicsLayers::HAZARD
+                | PhysicsLayers::PROJECTILE,
         ),
     )
 }
@@ -70,11 +73,11 @@ pub fn monster_physics_bundle(size: MonsterSize) -> (RigidBody, Collider, Collis
 /// Get capsule dimensions (half_height, radius) for a monster size.
 pub fn monster_capsule_dimensions(size: MonsterSize) -> (f32, f32) {
     match size {
-        MonsterSize::Tiny     => (0.3, 0.2),   // ~1.0m total
-        MonsterSize::Small    => (0.5, 0.3),   // ~1.6m total
-        MonsterSize::Medium   => (0.9, 0.4),   // ~2.6m total
-        MonsterSize::Large    => (1.5, 0.8),   // ~4.6m total
-        MonsterSize::Colossal => (2.5, 1.5),   // ~8.0m total
+        MonsterSize::Tiny => (0.3, 0.2),     // ~1.0m total
+        MonsterSize::Small => (0.5, 0.3),    // ~1.6m total
+        MonsterSize::Medium => (0.9, 0.4),   // ~2.6m total
+        MonsterSize::Large => (1.5, 0.8),    // ~4.6m total
+        MonsterSize::Colossal => (2.5, 1.5), // ~8.0m total
     }
 }
 
@@ -84,16 +87,15 @@ pub fn wall_physics_bundle(half_extents: Vec3) -> (RigidBody, Collider, Collisio
     (
         RigidBody::Fixed,
         Collider::cuboid(half_extents.x, half_extents.y, half_extents.z),
-        CollisionGroups::new(
-            PhysicsLayers::WALL,
-            Group::ALL,
-        ),
+        CollisionGroups::new(PhysicsLayers::WALL, Group::ALL),
     )
 }
 
 /// Physics components for a destructible object.
 /// Fixed rigid body with collision events enabled for destruction detection.
-pub fn destructible_physics_bundle(half_extents: Vec3) -> (RigidBody, Collider, CollisionGroups, ActiveEvents) {
+pub fn destructible_physics_bundle(
+    half_extents: Vec3,
+) -> (RigidBody, Collider, CollisionGroups, ActiveEvents) {
     (
         RigidBody::Fixed,
         Collider::cuboid(half_extents.x, half_extents.y, half_extents.z),
@@ -107,7 +109,9 @@ pub fn destructible_physics_bundle(half_extents: Vec3) -> (RigidBody, Collider, 
 
 /// Physics components for an environmental hazard (lava, spikes, etc.).
 /// Sensor collider — detects overlap without physical collision response.
-pub fn hazard_sensor_bundle(half_extents: Vec3) -> (Collider, Sensor, CollisionGroups, ActiveEvents) {
+pub fn hazard_sensor_bundle(
+    half_extents: Vec3,
+) -> (Collider, Sensor, CollisionGroups, ActiveEvents) {
     (
         Collider::cuboid(half_extents.x, half_extents.y, half_extents.z),
         Sensor,
@@ -142,7 +146,11 @@ impl Knockback {
         Self {
             velocity: direction.normalize_or_zero() * force,
             remaining: duration,
-            drag: if duration > 0.0 { force / duration } else { 0.0 },
+            drag: if duration > 0.0 {
+                force / duration
+            } else {
+                0.0
+            },
         }
     }
 }
@@ -197,7 +205,11 @@ mod tests {
         ];
         for i in 0..layers.len() {
             for j in (i + 1)..layers.len() {
-                assert_ne!(layers[i], layers[j], "Layers {} and {} should be distinct", i, j);
+                assert_ne!(
+                    layers[i], layers[j],
+                    "Layers {} and {} should be distinct",
+                    i, j
+                );
             }
         }
     }
@@ -227,11 +239,20 @@ mod tests {
             MonsterSize::Medium,
             MonsterSize::Large,
             MonsterSize::Colossal,
-        ].iter().map(|s| monster_capsule_dimensions(*s)).collect();
+        ]
+        .iter()
+        .map(|s| monster_capsule_dimensions(*s))
+        .collect();
 
         for i in 1..dims.len() {
-            assert!(dims[i].0 > dims[i - 1].0, "Half-height should increase with size");
-            assert!(dims[i].1 > dims[i - 1].1, "Radius should increase with size");
+            assert!(
+                dims[i].0 > dims[i - 1].0,
+                "Half-height should increase with size"
+            );
+            assert!(
+                dims[i].1 > dims[i - 1].1,
+                "Radius should increase with size"
+            );
         }
     }
 

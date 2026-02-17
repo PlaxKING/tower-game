@@ -93,7 +93,10 @@ fn bench_cache_performance(c: &mut Criterion) {
             static COUNTER: AtomicU32 = AtomicU32::new(1);
             let floor_id = COUNTER.fetch_add(1, Ordering::SeqCst);
 
-            generator.get_or_generate(floor_id, 0x12345678).await.unwrap()
+            generator
+                .get_or_generate(floor_id, 0x12345678)
+                .await
+                .unwrap()
         });
     });
 }

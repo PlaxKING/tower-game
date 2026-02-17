@@ -52,7 +52,11 @@ impl LmdbFloorCache {
     /// let cache = LmdbFloorCache::new("./data/floor_cache", 1_000_000_000)?;
     /// ```
     pub fn new<P: AsRef<Path>>(path: P, max_size_bytes: usize) -> Result<Self, LmdbError> {
-        info!("Opening LMDB cache at {:?} (max size: {} bytes)", path.as_ref(), max_size_bytes);
+        info!(
+            "Opening LMDB cache at {:?} (max size: {} bytes)",
+            path.as_ref(),
+            max_size_bytes
+        );
 
         // Create directory if it doesn't exist
         std::fs::create_dir_all(&path)?;
@@ -67,7 +71,11 @@ impl LmdbFloorCache {
 
         // Create/open database (requires write transaction)
         let mut wtxn = env.write_txn()?;
-        let db = env.create_database::<heed::types::U32<heed::byteorder::NativeEndian>, heed::types::Bytes>(&mut wtxn, Some("floors"))?;
+        let db = env
+            .create_database::<heed::types::U32<heed::byteorder::NativeEndian>, heed::types::Bytes>(
+                &mut wtxn,
+                Some("floors"),
+            )?;
         wtxn.commit()?;
 
         info!("LMDB cache opened successfully");
@@ -94,18 +102,16 @@ impl LmdbFloorCache {
         };
 
         match self.db.get(&rtxn, &floor_id) {
-            Ok(Some(bytes)) => {
-                match ChunkData::decode(bytes) {
-                    Ok(chunk) => {
-                        debug!("LMDB HIT for floor {}", floor_id);
-                        Some(chunk)
-                    }
-                    Err(e) => {
-                        warn!("Failed to decode floor {} from LMDB: {}", floor_id, e);
-                        None
-                    }
+            Ok(Some(bytes)) => match ChunkData::decode(bytes) {
+                Ok(chunk) => {
+                    debug!("LMDB HIT for floor {}", floor_id);
+                    Some(chunk)
                 }
-            }
+                Err(e) => {
+                    warn!("Failed to decode floor {} from LMDB: {}", floor_id, e);
+                    None
+                }
+            },
             Ok(None) => {
                 debug!("LMDB MISS for floor {} (not found)", floor_id);
                 None
@@ -145,7 +151,8 @@ impl LmdbFloorCache {
             Err(_) => return false,
         };
 
-        self.db.get(&rtxn, &floor_id)
+        self.db
+            .get(&rtxn, &floor_id)
             .map(|opt: Option<&[u8]>| opt.is_some())
             .unwrap_or(false)
     }

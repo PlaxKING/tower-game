@@ -4,7 +4,7 @@
 //! queried by ECS systems, and snapshotted by the API bridge.
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Player entity component (replicated to clients)
 #[derive(Component, Serialize, Deserialize, Debug, Clone)]

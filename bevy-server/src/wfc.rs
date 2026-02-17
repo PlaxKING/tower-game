@@ -13,7 +13,7 @@
 //!       → FloorLayout (2D tile grid + room metadata)
 //! ```
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -177,7 +177,9 @@ impl Rng {
     }
 
     fn next_range(&mut self, min: usize, max: usize) -> usize {
-        if max <= min { return min; }
+        if max <= min {
+            return min;
+        }
         min + (self.next() as usize % (max - min))
     }
 }
@@ -300,10 +302,7 @@ fn generate_rooms(
 
         // Check overlap (with 1-tile buffer)
         let overlaps = rooms.iter().any(|r: &Room| {
-            x < r.x + r.width + 1
-                && x + w + 1 > r.x
-                && y < r.y + r.height + 1
-                && y + h + 1 > r.y
+            x < r.x + r.width + 1 && x + w + 1 > r.x && y < r.y + r.height + 1 && y + h + 1 > r.y
         });
         if overlaps {
             continue;
@@ -333,7 +332,10 @@ fn generate_rooms(
         let semantic_tags = room_semantic_tags(room_type, biome_tags);
 
         rooms.push(Room {
-            x, y, width: w, height: h,
+            x,
+            y,
+            width: w,
+            height: h,
             room_type,
             semantic_tags,
         });
@@ -552,7 +554,10 @@ mod tests {
     fn test_deterministic_generation() {
         let layout_a = generate_layout(42, 1);
         let layout_b = generate_layout(42, 1);
-        assert_eq!(layout_a.tiles, layout_b.tiles, "Same seed must produce same layout");
+        assert_eq!(
+            layout_a.tiles, layout_b.tiles,
+            "Same seed must produce same layout"
+        );
         assert_eq!(layout_a.rooms.len(), layout_b.rooms.len());
     }
 
@@ -560,14 +565,20 @@ mod tests {
     fn test_different_floors_differ() {
         let layout_1 = generate_layout(42, 1);
         let layout_2 = generate_layout(42, 2);
-        assert_ne!(layout_1.tiles, layout_2.tiles, "Different floors should differ");
+        assert_ne!(
+            layout_1.tiles, layout_2.tiles,
+            "Different floors should differ"
+        );
     }
 
     #[test]
     fn test_different_seeds_differ() {
         let layout_a = generate_layout(100, 5);
         let layout_b = generate_layout(200, 5);
-        assert_ne!(layout_a.tiles, layout_b.tiles, "Different seeds should differ");
+        assert_ne!(
+            layout_a.tiles, layout_b.tiles,
+            "Different seeds should differ"
+        );
     }
 
     #[test]
@@ -581,8 +592,8 @@ mod tests {
 
     #[test]
     fn test_echelon_sizes() {
-        let e1 = generate_layout(42, 50);   // Echelon1
-        let e4 = generate_layout(42, 700);  // Echelon4
+        let e1 = generate_layout(42, 50); // Echelon1
+        let e4 = generate_layout(42, 700); // Echelon4
         assert!(e4.width > e1.width, "Higher echelon = larger floor");
         assert_eq!(e1.width, 16);
         assert_eq!(e4.width, 48);
@@ -597,7 +608,10 @@ mod tests {
     #[test]
     fn test_room_types() {
         let layout = generate_layout(42, 1);
-        let has_entrance = layout.rooms.iter().any(|r| r.room_type == RoomType::Entrance);
+        let has_entrance = layout
+            .rooms
+            .iter()
+            .any(|r| r.room_type == RoomType::Entrance);
         assert!(has_entrance, "Must have entrance room");
     }
 
@@ -622,11 +636,17 @@ mod tests {
     #[test]
     fn test_floor_has_walkable_tiles() {
         let layout = generate_layout(42, 1);
-        let floor_count = layout.tiles.iter()
+        let floor_count = layout
+            .tiles
+            .iter()
             .flat_map(|row| row.iter())
             .filter(|t| t.is_walkable())
             .count();
-        assert!(floor_count > 20, "Should have many walkable tiles, got {}", floor_count);
+        assert!(
+            floor_count > 20,
+            "Should have many walkable tiles, got {}",
+            floor_count
+        );
     }
 
     #[test]
@@ -643,7 +663,11 @@ mod tests {
     fn test_room_semantic_tags_exist() {
         let layout = generate_layout(42, 1);
         for room in &layout.rooms {
-            assert!(!room.semantic_tags.is_empty(), "Room {:?} should have tags", room.room_type);
+            assert!(
+                !room.semantic_tags.is_empty(),
+                "Room {:?} should have tags",
+                room.room_type
+            );
         }
     }
 
@@ -651,13 +675,18 @@ mod tests {
     fn test_spawner_placement() {
         // Generate many floors and check spawners exist on combat floors
         let layout = generate_layout(42, 50);
-        let combat_rooms: Vec<_> = layout.rooms.iter()
+        let combat_rooms: Vec<_> = layout
+            .rooms
+            .iter()
             .filter(|r| r.room_type == RoomType::Combat || r.room_type == RoomType::Boss)
             .collect();
 
         if !combat_rooms.is_empty() {
             let spawner_tiles = find_tiles(&layout.tiles, TileType::Spawner);
-            assert!(!spawner_tiles.is_empty(), "Combat rooms should have spawners");
+            assert!(
+                !spawner_tiles.is_empty(),
+                "Combat rooms should have spawners"
+            );
         }
     }
 
@@ -667,6 +696,9 @@ mod tests {
         let layout = generate_layout(42, 999);
         assert_eq!(layout.width, 48);
         assert_eq!(layout.height, 48);
-        assert!(layout.rooms.len() >= 8, "Large floor should have many rooms");
+        assert!(
+            layout.rooms.len() >= 8,
+            "Large floor should have many rooms"
+        );
     }
 }

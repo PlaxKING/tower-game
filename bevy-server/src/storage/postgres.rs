@@ -70,22 +70,23 @@ impl PostgresStore {
             "CREATE TABLE IF NOT EXISTS _migrations (
                 name VARCHAR(100) PRIMARY KEY,
                 applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )"
+            )",
         )
         .execute(&self.pool)
         .await?;
 
         for (name, sql) in migrations::get_migrations() {
-            let applied: bool = sqlx::query_scalar(
-                "SELECT EXISTS(SELECT 1 FROM _migrations WHERE name = $1)"
-            )
-            .bind(name)
-            .fetch_one(&self.pool)
-            .await?;
+            let applied: bool =
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM _migrations WHERE name = $1)")
+                    .bind(name)
+                    .fetch_one(&self.pool)
+                    .await?;
 
             if !applied {
                 info!("Running migration: {}", name);
-                sqlx::raw_sql(sql).execute(&self.pool).await
+                sqlx::raw_sql(sql)
+                    .execute(&self.pool)
+                    .await
                     .map_err(|e| PostgresError::Migration(format!("{}: {}", name, e)))?;
 
                 sqlx::query("INSERT INTO _migrations (name) VALUES ($1)")
@@ -144,7 +145,7 @@ impl PostgresStore {
                     health, max_health, kinetic_energy, thermal_energy, semantic_energy,
                     floor_id, pos_x, pos_y, pos_z, rot_pitch, rot_yaw,
                     is_alive, respawn_floor
-             FROM players WHERE id = $1"
+             FROM players WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -154,14 +155,17 @@ impl PostgresStore {
     }
 
     /// Get player by username
-    pub async fn get_player_by_username(&self, username: &str) -> Result<Option<PlayerRow>, PostgresError> {
+    pub async fn get_player_by_username(
+        &self,
+        username: &str,
+    ) -> Result<Option<PlayerRow>, PostgresError> {
         let row = sqlx::query_as::<_, PlayerRow>(
             "SELECT id, username, created_at, last_login, playtime_seconds,
                     base_str, base_dex, base_int, base_vit, base_luk,
                     health, max_health, kinetic_energy, thermal_energy, semantic_energy,
                     floor_id, pos_x, pos_y, pos_z, rot_pitch, rot_yaw,
                     is_alive, respawn_floor
-             FROM players WHERE username = $1"
+             FROM players WHERE username = $1",
         )
         .bind(username)
         .fetch_optional(&self.pool)
@@ -180,7 +184,7 @@ impl PostgresStore {
         z: f32,
     ) -> Result<(), PostgresError> {
         sqlx::query(
-            "UPDATE players SET floor_id = $2, pos_x = $3, pos_y = $4, pos_z = $5 WHERE id = $1"
+            "UPDATE players SET floor_id = $2, pos_x = $3, pos_y = $4, pos_z = $5 WHERE id = $1",
         )
         .bind(player_id)
         .bind(floor_id)
@@ -200,14 +204,12 @@ impl PostgresStore {
         health: f32,
         is_alive: bool,
     ) -> Result<(), PostgresError> {
-        sqlx::query(
-            "UPDATE players SET health = $2, is_alive = $3 WHERE id = $1"
-        )
-        .bind(player_id)
-        .bind(health)
-        .bind(is_alive)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE players SET health = $2, is_alive = $3 WHERE id = $1")
+            .bind(player_id)
+            .bind(health)
+            .bind(is_alive)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -241,7 +243,7 @@ impl PostgresStore {
     ) -> Result<Option<MasteryRow>, PostgresError> {
         let row = sqlx::query_as::<_, MasteryRow>(
             "SELECT player_id, domain, experience, tier, specialization
-             FROM mastery WHERE player_id = $1 AND domain = $2"
+             FROM mastery WHERE player_id = $1 AND domain = $2",
         )
         .bind(player_id)
         .bind(domain)
@@ -255,7 +257,7 @@ impl PostgresStore {
     pub async fn get_all_mastery(&self, player_id: i64) -> Result<Vec<MasteryRow>, PostgresError> {
         let rows = sqlx::query_as::<_, MasteryRow>(
             "SELECT player_id, domain, experience, tier, specialization
-             FROM mastery WHERE player_id = $1 ORDER BY domain"
+             FROM mastery WHERE player_id = $1 ORDER BY domain",
         )
         .bind(player_id)
         .fetch_all(&self.pool)
@@ -283,7 +285,7 @@ impl PostgresStore {
                         ELSE 0                                  -- Novice
                     END
              WHERE player_id = $1 AND domain = $2
-             RETURNING player_id, domain, experience, tier, specialization"
+             RETURNING player_id, domain, experience, tier, specialization",
         )
         .bind(player_id)
         .bind(domain)
@@ -303,7 +305,7 @@ impl PostgresStore {
     ) -> Result<(), PostgresError> {
         let result = sqlx::query(
             "UPDATE mastery SET specialization = $3
-             WHERE player_id = $1 AND domain = $2 AND tier >= 3"
+             WHERE player_id = $1 AND domain = $2 AND tier >= 3",
         )
         .bind(player_id)
         .bind(domain)
@@ -313,7 +315,7 @@ impl PostgresStore {
 
         if result.rows_affected() == 0 {
             return Err(PostgresError::Constraint(
-                "Specialization requires Expert tier (tier >= 3)".to_string()
+                "Specialization requires Expert tier (tier >= 3)".to_string(),
             ));
         }
 
@@ -330,7 +332,7 @@ impl PostgresStore {
             "SELECT id, player_id, item_template_id, quantity, slot_type, slot_index,
                     instance_id, durability, enhancement, sockets, rolled_effects
              FROM inventory WHERE player_id = $1 AND slot_type = 0
-             ORDER BY slot_index"
+             ORDER BY slot_index",
         )
         .bind(player_id)
         .fetch_all(&self.pool)
@@ -345,7 +347,7 @@ impl PostgresStore {
             "SELECT id, player_id, item_template_id, quantity, slot_type, slot_index,
                     instance_id, durability, enhancement, sockets, rolled_effects
              FROM inventory WHERE player_id = $1 AND slot_type = 1
-             ORDER BY slot_index"
+             ORDER BY slot_index",
         )
         .bind(player_id)
         .fetch_all(&self.pool)
@@ -367,7 +369,7 @@ impl PostgresStore {
             "SELECT id FROM inventory
              WHERE player_id = $1 AND item_template_id = $2 AND slot_type = $3
              AND instance_id IS NULL
-             LIMIT 1"
+             LIMIT 1",
         )
         .bind(player_id)
         .bind(item_template_id)
@@ -387,7 +389,7 @@ impl PostgresStore {
             // Find next available slot
             let next_slot: i16 = sqlx::query_scalar(
                 "SELECT COALESCE(MAX(slot_index) + 1, 0) FROM inventory
-                 WHERE player_id = $1 AND slot_type = $2"
+                 WHERE player_id = $1 AND slot_type = $2",
             )
             .bind(player_id)
             .bind(slot_type)
@@ -412,13 +414,11 @@ impl PostgresStore {
 
     /// Remove item quantity from a slot
     pub async fn remove_item(&self, slot_id: i64, quantity: i32) -> Result<(), PostgresError> {
-        let current: i32 = sqlx::query_scalar(
-            "SELECT quantity FROM inventory WHERE id = $1"
-        )
-        .bind(slot_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or_else(|| PostgresError::NotFound(format!("Inventory slot {}", slot_id)))?;
+        let current: i32 = sqlx::query_scalar("SELECT quantity FROM inventory WHERE id = $1")
+            .bind(slot_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| PostgresError::NotFound(format!("Inventory slot {}", slot_id)))?;
 
         if quantity >= current {
             sqlx::query("DELETE FROM inventory WHERE id = $1")
@@ -445,7 +445,7 @@ impl PostgresStore {
     ) -> Result<(), PostgresError> {
         sqlx::query(
             "UPDATE inventory SET slot_type = 1, slot_index = $3
-             WHERE id = $1 AND player_id = $2"
+             WHERE id = $1 AND player_id = $2",
         )
         .bind(slot_id)
         .bind(player_id)
@@ -464,7 +464,7 @@ impl PostgresStore {
     pub async fn get_wallet(&self, player_id: i64) -> Result<WalletRow, PostgresError> {
         let row = sqlx::query_as::<_, WalletRow>(
             "SELECT player_id, gold, premium_currency, honor_points, event_tokens
-             FROM wallets WHERE player_id = $1"
+             FROM wallets WHERE player_id = $1",
         )
         .bind(player_id)
         .fetch_optional(&self.pool)
@@ -477,7 +477,7 @@ impl PostgresStore {
     /// Add gold to wallet
     pub async fn add_gold(&self, player_id: i64, amount: i64) -> Result<i64, PostgresError> {
         let new_gold: i64 = sqlx::query_scalar(
-            "UPDATE wallets SET gold = gold + $2 WHERE player_id = $1 RETURNING gold"
+            "UPDATE wallets SET gold = gold + $2 WHERE player_id = $1 RETURNING gold",
         )
         .bind(player_id)
         .bind(amount)
@@ -489,12 +489,10 @@ impl PostgresStore {
 
     /// Remove gold from wallet
     pub async fn remove_gold(&self, player_id: i64, amount: i64) -> Result<i64, PostgresError> {
-        let current: i64 = sqlx::query_scalar(
-            "SELECT gold FROM wallets WHERE player_id = $1"
-        )
-        .bind(player_id)
-        .fetch_one(&self.pool)
-        .await?;
+        let current: i64 = sqlx::query_scalar("SELECT gold FROM wallets WHERE player_id = $1")
+            .bind(player_id)
+            .fetch_one(&self.pool)
+            .await?;
 
         if current < amount {
             return Err(PostgresError::InsufficientFunds {
@@ -504,7 +502,7 @@ impl PostgresStore {
         }
 
         let new_gold: i64 = sqlx::query_scalar(
-            "UPDATE wallets SET gold = gold - $2 WHERE player_id = $1 RETURNING gold"
+            "UPDATE wallets SET gold = gold - $2 WHERE player_id = $1 RETURNING gold",
         )
         .bind(player_id)
         .bind(amount)
@@ -524,12 +522,11 @@ impl PostgresStore {
         let mut tx = self.pool.begin().await?;
 
         // Check sender balance
-        let sender_gold: i64 = sqlx::query_scalar(
-            "SELECT gold FROM wallets WHERE player_id = $1 FOR UPDATE"
-        )
-        .bind(from)
-        .fetch_one(&mut *tx)
-        .await?;
+        let sender_gold: i64 =
+            sqlx::query_scalar("SELECT gold FROM wallets WHERE player_id = $1 FOR UPDATE")
+                .bind(from)
+                .fetch_one(&mut *tx)
+                .await?;
 
         if sender_gold < amount {
             return Err(PostgresError::InsufficientFunds {
@@ -555,7 +552,7 @@ impl PostgresStore {
         // Log transaction
         sqlx::query(
             "INSERT INTO transaction_log (tx_type, from_player, to_player, gold_amount)
-             VALUES ('transfer', $1, $2, $3)"
+             VALUES ('transfer', $1, $2, $3)",
         )
         .bind(from)
         .bind(to)
@@ -583,7 +580,7 @@ impl PostgresStore {
 
         let guild_id: i64 = sqlx::query_scalar(
             "INSERT INTO guilds (name, tag, leader_id, description)
-             VALUES ($1, $2, $3, $4) RETURNING id"
+             VALUES ($1, $2, $3, $4) RETURNING id",
         )
         .bind(name)
         .bind(tag)
@@ -593,13 +590,11 @@ impl PostgresStore {
         .await?;
 
         // Add leader as member with rank 4
-        sqlx::query(
-            "INSERT INTO guild_members (guild_id, player_id, rank) VALUES ($1, $2, 4)"
-        )
-        .bind(guild_id)
-        .bind(leader_id)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("INSERT INTO guild_members (guild_id, player_id, rank) VALUES ($1, $2, 4)")
+            .bind(guild_id)
+            .bind(leader_id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
         info!("Created guild: {} [{}] (id={})", name, tag, guild_id);
@@ -611,7 +606,7 @@ impl PostgresStore {
         let row = sqlx::query_as::<_, GuildRow>(
             "SELECT id, name, tag, leader_id, created_at, level, experience,
                     max_members, description, motd, is_recruiting, bank_gold
-             FROM guilds WHERE id = $1"
+             FROM guilds WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -627,14 +622,12 @@ impl PostgresStore {
         player_id: i64,
         rank: i16,
     ) -> Result<(), PostgresError> {
-        sqlx::query(
-            "INSERT INTO guild_members (guild_id, player_id, rank) VALUES ($1, $2, $3)"
-        )
-        .bind(guild_id)
-        .bind(player_id)
-        .bind(rank)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("INSERT INTO guild_members (guild_id, player_id, rank) VALUES ($1, $2, $3)")
+            .bind(guild_id)
+            .bind(player_id)
+            .bind(rank)
+            .execute(&self.pool)
+            .await?;
 
         Ok(())
     }
@@ -655,14 +648,17 @@ impl PostgresStore {
     }
 
     /// Get guild members
-    pub async fn get_guild_members(&self, guild_id: i64) -> Result<Vec<GuildMemberRow>, PostgresError> {
+    pub async fn get_guild_members(
+        &self,
+        guild_id: i64,
+    ) -> Result<Vec<GuildMemberRow>, PostgresError> {
         let rows = sqlx::query_as::<_, GuildMemberRow>(
             "SELECT gm.guild_id, gm.player_id, gm.rank, gm.joined_at, gm.contribution, gm.note,
                     p.username
              FROM guild_members gm
              JOIN players p ON gm.player_id = p.id
              WHERE gm.guild_id = $1
-             ORDER BY gm.rank DESC, gm.joined_at"
+             ORDER BY gm.rank DESC, gm.joined_at",
         )
         .bind(guild_id)
         .fetch_all(&self.pool)
@@ -683,17 +679,19 @@ impl PostgresStore {
         num_objectives: usize,
     ) -> Result<(), PostgresError> {
         let objectives: Vec<serde_json::Value> = (0..num_objectives)
-            .map(|i| serde_json::json!({
-                "index": i,
-                "current": 0,
-                "complete": false
-            }))
+            .map(|i| {
+                serde_json::json!({
+                    "index": i,
+                    "current": 0,
+                    "complete": false
+                })
+            })
             .collect();
 
         sqlx::query(
             "INSERT INTO player_quests (player_id, quest_id, status, objectives, started_at)
              VALUES ($1, $2, 1, $3, NOW())
-             ON CONFLICT (player_id, quest_id) DO UPDATE SET status = 1, started_at = NOW()"
+             ON CONFLICT (player_id, quest_id) DO UPDATE SET status = 1, started_at = NOW()",
         )
         .bind(player_id)
         .bind(quest_id)
@@ -717,7 +715,7 @@ impl PostgresStore {
                 objectives,
                 ('{' || $3 || ',current}')::text[],
                 to_jsonb($4::int)
-             ) WHERE player_id = $1 AND quest_id = $2"
+             ) WHERE player_id = $1 AND quest_id = $2",
         )
         .bind(player_id)
         .bind(quest_id)
@@ -738,7 +736,7 @@ impl PostgresStore {
         sqlx::query(
             "UPDATE player_quests SET status = 3, completed_at = NOW(),
                     times_completed = times_completed + 1
-             WHERE player_id = $1 AND quest_id = $2"
+             WHERE player_id = $1 AND quest_id = $2",
         )
         .bind(player_id)
         .bind(quest_id)
@@ -749,7 +747,10 @@ impl PostgresStore {
     }
 
     /// Get active quests for a player
-    pub async fn get_active_quests(&self, player_id: i64) -> Result<Vec<QuestProgressRow>, PostgresError> {
+    pub async fn get_active_quests(
+        &self,
+        player_id: i64,
+    ) -> Result<Vec<QuestProgressRow>, PostgresError> {
         let rows = sqlx::query_as::<_, QuestProgressRow>(
             "SELECT player_id, quest_id, status, objectives, started_at, completed_at, times_completed
              FROM player_quests WHERE player_id = $1 AND status IN (1, 2)
@@ -780,7 +781,7 @@ impl PostgresStore {
             "INSERT INTO auctions (seller_id, item_template_id, quantity, buyout_price,
                     starting_bid, expires_at)
              VALUES ($1, $2, $3, $4, $5, NOW() + make_interval(hours => $6))
-             RETURNING id"
+             RETURNING id",
         )
         .bind(seller_id)
         .bind(item_template_id)
@@ -795,14 +796,18 @@ impl PostgresStore {
     }
 
     /// Get active auction listings
-    pub async fn get_active_auctions(&self, limit: i32, offset: i32) -> Result<Vec<AuctionRow>, PostgresError> {
+    pub async fn get_active_auctions(
+        &self,
+        limit: i32,
+        offset: i32,
+    ) -> Result<Vec<AuctionRow>, PostgresError> {
         let rows = sqlx::query_as::<_, AuctionRow>(
             "SELECT id, seller_id, item_template_id, quantity, buyout_price,
                     starting_bid, current_bid, highest_bidder,
                     created_at, expires_at, status, tax_rate
              FROM auctions WHERE status = 0 AND expires_at > NOW()
              ORDER BY created_at DESC
-             LIMIT $1 OFFSET $2"
+             LIMIT $1 OFFSET $2",
         )
         .bind(limit)
         .bind(offset)
@@ -822,33 +827,33 @@ impl PostgresStore {
         let mut tx = self.pool.begin().await?;
 
         // Get current auction state
-        let (current_bid, status): (Option<i64>, i16) = sqlx::query_as(
-            "SELECT current_bid, status FROM auctions WHERE id = $1 FOR UPDATE"
-        )
-        .bind(auction_id)
-        .fetch_one(&mut *tx)
-        .await?;
+        let (current_bid, status): (Option<i64>, i16) =
+            sqlx::query_as("SELECT current_bid, status FROM auctions WHERE id = $1 FOR UPDATE")
+                .bind(auction_id)
+                .fetch_one(&mut *tx)
+                .await?;
 
         if status != 0 {
-            return Err(PostgresError::Constraint("Auction is not active".to_string()));
+            return Err(PostgresError::Constraint(
+                "Auction is not active".to_string(),
+            ));
         }
 
         let current = current_bid.unwrap_or(0);
         if amount <= current {
-            return Err(PostgresError::Constraint(
-                format!("Bid {} must be higher than current bid {}", amount, current)
-            ));
+            return Err(PostgresError::Constraint(format!(
+                "Bid {} must be higher than current bid {}",
+                amount, current
+            )));
         }
 
         // Update auction
-        sqlx::query(
-            "UPDATE auctions SET current_bid = $2, highest_bidder = $3 WHERE id = $1"
-        )
-        .bind(auction_id)
-        .bind(amount)
-        .bind(bidder_id)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("UPDATE auctions SET current_bid = $2, highest_bidder = $3 WHERE id = $1")
+            .bind(auction_id)
+            .bind(amount)
+            .bind(bidder_id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
         Ok(())
@@ -867,7 +872,7 @@ impl PostgresStore {
             "SELECT id, seller_id, item_template_id, quantity, buyout_price,
                     starting_bid, current_bid, highest_bidder,
                     created_at, expires_at, status, tax_rate
-             FROM auctions WHERE id = $1 AND status = 0 FOR UPDATE"
+             FROM auctions WHERE id = $1 AND status = 0 FOR UPDATE",
         )
         .bind(auction_id)
         .fetch_optional(&mut *tx)
@@ -878,12 +883,11 @@ impl PostgresStore {
         let seller_receives = row.buyout_price - tax;
 
         // Deduct from buyer
-        let buyer_gold: i64 = sqlx::query_scalar(
-            "SELECT gold FROM wallets WHERE player_id = $1 FOR UPDATE"
-        )
-        .bind(buyer_id)
-        .fetch_one(&mut *tx)
-        .await?;
+        let buyer_gold: i64 =
+            sqlx::query_scalar("SELECT gold FROM wallets WHERE player_id = $1 FOR UPDATE")
+                .bind(buyer_id)
+                .fetch_one(&mut *tx)
+                .await?;
 
         if buyer_gold < row.buyout_price {
             return Err(PostgresError::InsufficientFunds {
@@ -930,11 +934,10 @@ impl PostgresStore {
 
     /// Expire old auctions
     pub async fn expire_old_auctions(&self) -> Result<u64, PostgresError> {
-        let result = sqlx::query(
-            "UPDATE auctions SET status = 2 WHERE status = 0 AND expires_at <= NOW()"
-        )
-        .execute(&self.pool)
-        .await?;
+        let result =
+            sqlx::query("UPDATE auctions SET status = 2 WHERE status = 0 AND expires_at <= NOW()")
+                .execute(&self.pool)
+                .await?;
 
         let count = result.rows_affected();
         if count > 0 {
@@ -955,7 +958,7 @@ impl PostgresStore {
     ) -> Result<Option<ReputationRow>, PostgresError> {
         let row = sqlx::query_as::<_, ReputationRow>(
             "SELECT player_id, faction_id, reputation, standing
-             FROM player_reputation WHERE player_id = $1 AND faction_id = $2"
+             FROM player_reputation WHERE player_id = $1 AND faction_id = $2",
         )
         .bind(player_id)
         .bind(faction_id)
@@ -996,7 +999,7 @@ impl PostgresStore {
                      WHEN player_reputation.reputation + $3 >= -6000 THEN 1
                      ELSE 0
                  END
-             RETURNING player_id, faction_id, reputation, standing"
+             RETURNING player_id, faction_id, reputation, standing",
         )
         .bind(player_id)
         .bind(faction_id)
@@ -1020,7 +1023,7 @@ impl PostgresStore {
         sqlx::query(
             "INSERT INTO friendships (player_id, friend_id, status)
              VALUES ($1, $2, 0)
-             ON CONFLICT (player_id, friend_id) DO NOTHING"
+             ON CONFLICT (player_id, friend_id) DO NOTHING",
         )
         .bind(player_id)
         .bind(friend_id)
@@ -1041,7 +1044,7 @@ impl PostgresStore {
         // Update original request
         sqlx::query(
             "UPDATE friendships SET status = 1
-             WHERE player_id = $1 AND friend_id = $2 AND status = 0"
+             WHERE player_id = $1 AND friend_id = $2 AND status = 0",
         )
         .bind(friend_id)
         .bind(player_id)
@@ -1051,7 +1054,7 @@ impl PostgresStore {
         // Create reverse relationship
         sqlx::query(
             "INSERT INTO friendships (player_id, friend_id, status) VALUES ($1, $2, 1)
-             ON CONFLICT (player_id, friend_id) DO UPDATE SET status = 1"
+             ON CONFLICT (player_id, friend_id) DO UPDATE SET status = 1",
         )
         .bind(player_id)
         .bind(friend_id)
@@ -1078,7 +1081,7 @@ impl PostgresStore {
     ) -> Result<i64, PostgresError> {
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO mail (sender_id, sender_name, recipient_id, subject, body, gold_attached)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
         )
         .bind(sender_id)
         .bind(sender_name)
@@ -1098,7 +1101,7 @@ impl PostgresStore {
             "SELECT id, sender_id, sender_name, recipient_id, subject, body,
                     gold_attached, items_attached, status, sent_at, expires_at
              FROM mail WHERE recipient_id = $1 AND status IN (0, 1) AND expires_at > NOW()
-             ORDER BY sent_at DESC"
+             ORDER BY sent_at DESC",
         )
         .bind(player_id)
         .fetch_all(&self.pool)
@@ -1128,7 +1131,7 @@ impl PostgresStore {
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO player_echoes (player_id, player_name, floor_id, pos_x, pos_y, pos_z,
                     cause_of_death, echo_type, echo_message, semantic_tags)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id"
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
         )
         .bind(player_id)
         .bind(player_name)
@@ -1153,7 +1156,7 @@ impl PostgresStore {
                     cause_of_death, last_action, echo_type, echo_message, echo_strength,
                     semantic_tags, created_at, expires_at
              FROM player_echoes WHERE floor_id = $1 AND expires_at > NOW()
-             ORDER BY created_at DESC"
+             ORDER BY created_at DESC",
         )
         .bind(floor_id)
         .fetch_all(&self.pool)
@@ -1207,7 +1210,7 @@ impl PostgresStore {
              FROM shadow_recordings
              WHERE pvp_rating BETWEEN $1 - $2 AND $1 + $2
              ORDER BY RANDOM()
-             LIMIT $3"
+             LIMIT $3",
         )
         .bind(rating)
         .bind(range)
@@ -1231,7 +1234,7 @@ impl PostgresStore {
         let id: i64 = sqlx::query_scalar(
             "INSERT INTO duel_results (challenger_id, shadow_owner_id, winner_id,
                     rating_change_challenger, rating_change_defender, duration_ms)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
         )
         .bind(challenger_id)
         .bind(shadow_owner_id)
@@ -1262,7 +1265,7 @@ impl PostgresStore {
             "INSERT INTO leaderboards (board_type, rank, player_id, player_name, score, updated_at)
              VALUES ($1, $2, $3, $4, $5, NOW())
              ON CONFLICT (board_type, rank) DO UPDATE SET
-                player_id = $3, player_name = $4, score = $5, updated_at = NOW()"
+                player_id = $3, player_name = $4, score = $5, updated_at = NOW()",
         )
         .bind(board_type)
         .bind(rank)
@@ -1285,7 +1288,7 @@ impl PostgresStore {
             "SELECT board_type, rank, player_id, player_name, score, extra_data, updated_at
              FROM leaderboards WHERE board_type = $1
              ORDER BY rank ASC
-             LIMIT $2"
+             LIMIT $2",
         )
         .bind(board_type)
         .bind(limit)
@@ -1307,7 +1310,7 @@ impl PostgresStore {
     ) -> Result<Option<SeasonProgressRow>, PostgresError> {
         let row = sqlx::query_as::<_, SeasonProgressRow>(
             "SELECT player_id, season_id, level, experience, has_premium, claimed_levels
-             FROM player_seasons WHERE player_id = $1 AND season_id = $2"
+             FROM player_seasons WHERE player_id = $1 AND season_id = $2",
         )
         .bind(player_id)
         .bind(season_id)
@@ -1330,7 +1333,7 @@ impl PostgresStore {
              ON CONFLICT (player_id, season_id) DO UPDATE
                 SET experience = player_seasons.experience + $3,
                     level = 1 + ((player_seasons.experience + $3) / 10000)::smallint
-             RETURNING player_id, season_id, level, experience, has_premium, claimed_levels"
+             RETURNING player_id, season_id, level, experience, has_premium, claimed_levels",
         )
         .bind(player_id)
         .bind(season_id)
@@ -1372,11 +1375,14 @@ impl PostgresStore {
     }
 
     /// Get player achievements
-    pub async fn get_achievements(&self, player_id: i64) -> Result<Vec<AchievementRow>, PostgresError> {
+    pub async fn get_achievements(
+        &self,
+        player_id: i64,
+    ) -> Result<Vec<AchievementRow>, PostgresError> {
         let rows = sqlx::query_as::<_, AchievementRow>(
             "SELECT player_id, achievement_id, is_completed, progress, completed_at
              FROM player_achievements WHERE player_id = $1
-             ORDER BY achievement_id"
+             ORDER BY achievement_id",
         )
         .bind(player_id)
         .fetch_all(&self.pool)

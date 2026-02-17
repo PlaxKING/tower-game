@@ -1,51 +1,47 @@
 use bevy::prelude::*;
 use bevy_replicon::prelude::*;
 use bevy_replicon_renet::{
-    RepliconRenetPlugins,
+    netcode::{NetcodeServerTransport, ServerAuthentication, ServerConfig as NetcodeServerConfig},
     renet::RenetServer,
-    netcode::{
-        ServerAuthentication,
-        ServerConfig as NetcodeServerConfig,
-        NetcodeServerTransport,
-    },
+    RepliconRenetPlugins,
 };
+use std::net::{SocketAddr, UdpSocket};
 use std::sync::Arc;
 use std::time::Duration;
-use std::net::{SocketAddr, UdpSocket};
-use tracing::{info, error};
+use tracing::{error, info};
 
 // Shared modules from the library crate (ensures type compatibility with API layer)
+use bevy_rapier3d::prelude::{NoUserData, RapierPhysicsPlugin};
 use tower_bevy_server::{
-    api, storage,
-    ecs_bridge::{self, WorldSnapshotResource, ServerUptime},
-    components::{Player, Monster, FloorTile},
-    combat, destruction, monster_gen, physics, input,
+    api, combat,
+    components::{FloorTile, Monster, Player},
+    destruction,
+    ecs_bridge::{self, ServerUptime, WorldSnapshotResource},
+    input, monster_gen, physics, storage,
 };
-use bevy_rapier3d::prelude::{RapierPhysicsPlugin, NoUserData};
 
 // Binary-only modules (not shared with library)
+#[allow(dead_code)]
+mod async_generation; // Async floor generation with worker pool
 #[allow(dead_code)]
 mod dynamic_scaling;
 #[allow(dead_code)]
 mod hybrid_generation;
-mod proto;  // Auto-generated Protobuf types
 #[allow(dead_code)]
-mod async_generation;  // Async floor generation with worker pool
+mod lmdb_cache; // LMDB embedded database caching (Tier 2)
+mod proto; // Auto-generated Protobuf types
 #[allow(dead_code)]
-mod lmdb_cache;  // LMDB embedded database caching (Tier 2)
-#[allow(dead_code)]
-mod semantic_tags;  // Semantic tag system
-mod wfc;  // WFC floor generation (shared with library)
+mod semantic_tags; // Semantic tag system
+mod wfc; // WFC floor generation (shared with library)
 
 #[cfg(test)]
-mod proto_test;  // Protobuf serialization tests
+mod proto_test; // Protobuf serialization tests
 
+use destruction::FloorDestructionManager;
 use dynamic_scaling::*;
 use hybrid_generation::{
-    generate_floor_with_validation, validate_client_floors,
-    FloorValidationCache,
+    generate_floor_with_validation, validate_client_floors, FloorValidationCache,
 };
-use destruction::FloorDestructionManager;
 
 fn main() {
     // Initialize logging
@@ -59,8 +55,7 @@ fn main() {
     // ========================================================================
     // 1. Initialize LMDB template store (synchronous, embedded DB)
     // ========================================================================
-    let lmdb_path = std::env::var("LMDB_PATH")
-        .unwrap_or_else(|_| "data/templates".to_string());
+    let lmdb_path = std::env::var("LMDB_PATH").unwrap_or_else(|_| "data/templates".to_string());
     let lmdb_max_size: usize = {
         let raw = std::env::var("LMDB_MAX_SIZE")
             .ok()
@@ -73,12 +68,11 @@ fn main() {
 
     let lmdb = Arc::new(
         storage::lmdb_templates::LmdbTemplateStore::new(&lmdb_path, lmdb_max_size)
-            .expect("Failed to initialize LMDB template store")
+            .expect("Failed to initialize LMDB template store"),
     );
 
     // Seed initial game data (monsters, items, abilities, recipes, loot tables, quests, factions)
-    storage::seed_data::seed_all(&lmdb)
-        .expect("Failed to seed LMDB template data");
+    storage::seed_data::seed_all(&lmdb).expect("Failed to seed LMDB template data");
     info!("LMDB template store initialized at: {}", lmdb_path);
 
     // ========================================================================
@@ -97,8 +91,9 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
         rt.block_on(async {
             // Initialize PostgreSQL (async connection pool + auto-run migrations)
-            let database_url = std::env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "postgres://postgres:localdb@localhost:5433/tower_game".to_string());
+            let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+                "postgres://postgres:localdb@localhost:5433/tower_game".to_string()
+            });
             let pg_max_connections: u32 = std::env::var("PG_MAX_CONNECTIONS")
                 .ok()
                 .and_then(|s| s.parse().ok())
@@ -106,7 +101,9 @@ fn main() {
 
             info!("Connecting to PostgreSQL: {}...", database_url);
 
-            let pg = match storage::postgres::PostgresStore::new(&database_url, pg_max_connections).await {
+            let pg = match storage::postgres::PostgresStore::new(&database_url, pg_max_connections)
+                .await
+            {
                 Ok(store) => {
                     info!("PostgreSQL connected and migrations applied");
                     Arc::new(store)
@@ -114,7 +111,9 @@ fn main() {
                 Err(e) => {
                     error!("PostgreSQL connection failed: {}", e);
                     error!("Ensure PostgreSQL is running: docker compose up -d postgres");
-                    error!("API server will NOT start. Bevy game server continues without HTTP API.");
+                    error!(
+                        "API server will NOT start. Bevy game server continues without HTTP API."
+                    );
                     // Keep the thread alive so Bevy server continues (game logic works without DB)
                     tokio::signal::ctrl_c().await.ok();
                     return;
@@ -127,9 +126,9 @@ fn main() {
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(50051);
 
-            if let Err(e) = api::start_api_server(
-                api_lmdb, pg, api_cmd_sender, api_snapshot, port,
-            ).await {
+            if let Err(e) =
+                api::start_api_server(api_lmdb, pg, api_cmd_sender, api_snapshot, port).await
+            {
                 error!("API server error: {}", e);
             }
         });
@@ -138,75 +137,77 @@ fn main() {
     App::new()
         // Headless Bevy (no rendering)
         .add_plugins(MinimalPlugins)
-        .add_plugins(TransformPlugin)   // Required for GlobalTransform sync (rapier reads GlobalTransform)
-        .add_plugins(HierarchyPlugin)   // Required by TransformPlugin
+        .add_plugins(TransformPlugin) // Required for GlobalTransform sync (rapier reads GlobalTransform)
+        .add_plugins(HierarchyPlugin) // Required by TransformPlugin
         .add_plugins(bevy::asset::AssetPlugin::default()) // Required by rapier's async scene collider system
-        .add_plugins(bevy::scene::ScenePlugin)            // Provides SceneSpawner for rapier
-        .init_asset::<bevy::render::mesh::Mesh>()         // Register Mesh asset for rapier (no renderer needed)
-
+        .add_plugins(bevy::scene::ScenePlugin) // Provides SceneSpawner for rapier
+        .init_asset::<bevy::render::mesh::Mesh>() // Register Mesh asset for rapier (no renderer needed)
         // Physics engine (headless — no debug rendering)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-
         // Networking plugins
         .add_plugins(RepliconPlugins)
         .add_plugins(RepliconRenetPlugins)
-
         // Register replicated components
         .replicate::<Player>()
         .replicate::<Monster>()
         .replicate::<FloorTile>()
-
         // Register client-to-server input event (bevy_replicon networking)
         .add_client_event::<input::PlayerInput>(ChannelKind::Ordered)
-
         // Server configuration (20 Hz for responsive combat)
         .insert_resource(ServerConfig {
-            max_players_per_floor: 100,  // Dynamic scaling (see below)
-            tick_rate: 20, // 20 ticks per second (50ms) - responsive!
+            max_players_per_floor: 100, // Dynamic scaling (see below)
+            tick_rate: 20,              // 20 ticks per second (50ms) - responsive!
             target_frame_time: Duration::from_millis(50),
         })
-
         // Resources
         .insert_resource(DynamicScaling::default())
         .insert_resource(FloorDestructionManager::new())
         .insert_resource(combat::WeaponMovesets::default())
         .insert_resource(FloorValidationCache::default())
-
         // ECS Bridge resources
         .insert_resource(cmd_receiver)
-        .insert_resource(WorldSnapshotResource { snapshot: world_snapshot })
+        .insert_resource(WorldSnapshotResource {
+            snapshot: world_snapshot,
+        })
         .insert_resource(ServerUptime::default())
-
         // Server systems
         .add_systems(Startup, setup_server)
         .add_systems(Update, monitor_performance_system)
-        .add_systems(Update, (
-            generate_floor_with_validation,
-            validate_client_floors,
-        ))
-        .add_systems(Update, (
-            handle_player_connections,
-            process_player_input,
-            update_game_state,
-        ))
+        .add_systems(
+            Update,
+            (generate_floor_with_validation, validate_client_floors),
+        )
+        .add_systems(
+            Update,
+            (
+                handle_player_connections,
+                process_player_input,
+                update_game_state,
+            ),
+        )
         // Combat systems
         .add_systems(Update, combat::update_combat_timers)
         // Monster AI systems
         .add_systems(Update, monster_gen::update_monster_ai)
         // Destruction systems
-        .add_systems(Update, (
-            destruction::process_destruction_events,
-            destruction::respawn_destructibles,
-        ))
+        .add_systems(
+            Update,
+            (
+                destruction::process_destruction_events,
+                destruction::respawn_destructibles,
+            ),
+        )
         // Physics knockback
         .add_systems(Update, physics::apply_knockback)
         // ECS Bridge systems (snapshot + command processing)
-        .add_systems(Update, (
-            ecs_bridge::update_uptime,
-            ecs_bridge::update_world_snapshot,
-            ecs_bridge::process_game_commands,
-        ))
-
+        .add_systems(
+            Update,
+            (
+                ecs_bridge::update_uptime,
+                ecs_bridge::update_world_snapshot,
+                ecs_bridge::process_game_commands,
+            ),
+        )
         .run();
 }
 
@@ -255,10 +256,8 @@ fn setup_server(mut commands: Commands) {
         authentication: ServerAuthentication::Unsecure,
     };
 
-    let transport = NetcodeServerTransport::new(
-        netcode_config,
-        socket,
-    ).expect("Failed to create transport");
+    let transport =
+        NetcodeServerTransport::new(netcode_config, socket).expect("Failed to create transport");
 
     commands.insert_resource(server);
     commands.insert_resource(transport);
@@ -285,28 +284,33 @@ fn handle_player_connections(
         }
 
         // Spawn new player entity with physics + combat components
-        let player_entity = commands.spawn((
-            Player {
-                id: client_id,
-                position: Vec3::ZERO,
-                health: 100.0,
-                current_floor: 1,
-            },
-            Transform::from_translation(Vec3::ZERO),
-            physics::player_physics_bundle(),
-            combat::CombatState::default(),
-            combat::EquippedWeapon {
-                weapon_type: combat::WeaponType::Sword,
-                weapon_id: format!("starter_sword"),
-                base_damage: 25.0,
-                attack_speed: 1.0,
-                range: 2.0,
-            },
-            combat::CombatEnergy::default(),
-            Replicated, // Mark for replication
-        )).id();
+        let player_entity = commands
+            .spawn((
+                Player {
+                    id: client_id,
+                    position: Vec3::ZERO,
+                    health: 100.0,
+                    current_floor: 1,
+                },
+                Transform::from_translation(Vec3::ZERO),
+                physics::player_physics_bundle(),
+                combat::CombatState::default(),
+                combat::EquippedWeapon {
+                    weapon_type: combat::WeaponType::Sword,
+                    weapon_id: format!("starter_sword"),
+                    base_damage: 25.0,
+                    attack_speed: 1.0,
+                    range: 2.0,
+                },
+                combat::CombatEnergy::default(),
+                Replicated, // Mark for replication
+            ))
+            .id();
 
-        info!("👤 Player {} connected (entity: {:?})", client_id, player_entity);
+        info!(
+            "👤 Player {} connected (entity: {:?})",
+            client_id, player_entity
+        );
     }
 }
 
@@ -325,8 +329,8 @@ fn process_player_input(
         let player_input = &event.event;
 
         // Find this client's player entity
-        let Some((entity, mut player, mut transform)) = players.iter_mut()
-            .find(|(_, p, _)| p.id == client_id.get())
+        let Some((entity, mut player, mut transform)) =
+            players.iter_mut().find(|(_, p, _)| p.id == client_id.get())
         else {
             continue;
         };
@@ -343,9 +347,8 @@ fn process_player_input(
                 if let Ok(mut cs) = combat_states.get_mut(entity) {
                     cs.facing = input::validate_facing(player_input.facing);
                     if let Ok(weapon) = weapons.get(entity) {
-                        let _ = combat::try_combat_action(
-                            &mut cs, combat_action, weapon, &movesets,
-                        );
+                        let _ =
+                            combat::try_combat_action(&mut cs, combat_action, weapon, &movesets);
                     }
                 }
             }
@@ -353,9 +356,7 @@ fn process_player_input(
     }
 }
 
-fn update_game_state(
-    mut players: Query<(&mut Player, &Transform)>,
-) {
+fn update_game_state(mut players: Query<(&mut Player, &Transform)>) {
     // Sync Player.position with Transform (after input, physics, and knockback updates)
     for (mut player, transform) in &mut players {
         player.position = transform.translation;

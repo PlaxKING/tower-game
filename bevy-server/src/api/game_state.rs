@@ -7,7 +7,7 @@
 //! - POST /tower.GameStateService/GetLiveStatus  (reads from Bevy ECS snapshot)
 //! - POST /tower.GameStateService/GetLivePlayer   (reads live player from ECS)
 
-use axum::{Router, Json, extract::State, routing::post};
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use super::ApiState;
@@ -16,10 +16,22 @@ use crate::ecs_bridge::GameCommand;
 pub fn routes() -> Router<ApiState> {
     Router::new()
         .route("/tower.GameStateService/GetState", post(get_state))
-        .route("/tower.GameStateService/GetWorldCycle", post(get_world_cycle))
-        .route("/tower.GameStateService/GetPlayerProfile", post(get_player_profile))
-        .route("/tower.GameStateService/GetLiveStatus", post(get_live_status))
-        .route("/tower.GameStateService/GetLivePlayer", post(get_live_player))
+        .route(
+            "/tower.GameStateService/GetWorldCycle",
+            post(get_world_cycle),
+        )
+        .route(
+            "/tower.GameStateService/GetPlayerProfile",
+            post(get_player_profile),
+        )
+        .route(
+            "/tower.GameStateService/GetLiveStatus",
+            post(get_live_status),
+        )
+        .route(
+            "/tower.GameStateService/GetLivePlayer",
+            post(get_live_player),
+        )
 }
 
 // ============================================================================
@@ -218,7 +230,9 @@ async fn get_live_status(
     State(state): State<ApiState>,
     Json(_req): Json<serde_json::Value>,
 ) -> Json<LiveStatusResponse> {
-    let snap = state.world_snapshot.read()
+    let snap = state
+        .world_snapshot
+        .read()
         .map(|s| s.clone())
         .unwrap_or_default();
 
@@ -227,17 +241,32 @@ async fn get_live_status(
         .unwrap_or_default()
         .as_secs();
 
-    let players: Vec<LivePlayerInfo> = snap.players.values().map(|p| LivePlayerInfo {
-        id: p.id,
-        position: p.position,
-        health: p.health,
-        floor: p.current_floor,
-        in_combat: p.in_combat,
-    }).collect();
+    let players: Vec<LivePlayerInfo> = snap
+        .players
+        .values()
+        .map(|p| LivePlayerInfo {
+            id: p.id,
+            position: p.position,
+            health: p.health,
+            floor: p.current_floor,
+            in_combat: p.in_combat,
+        })
+        .collect();
 
-    let destruction_stats = snap.destruction_stats.iter().map(|(&floor, &(total, destroyed, pct))| {
-        (floor, DestructionFloorStats { total, destroyed, percentage: pct })
-    }).collect();
+    let destruction_stats = snap
+        .destruction_stats
+        .iter()
+        .map(|(&floor, &(total, destroyed, pct))| {
+            (
+                floor,
+                DestructionFloorStats {
+                    total,
+                    destroyed,
+                    percentage: pct,
+                },
+            )
+        })
+        .collect();
 
     Json(LiveStatusResponse {
         server_tick: snap.tick,

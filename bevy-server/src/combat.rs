@@ -14,7 +14,7 @@
 //! ```
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -145,124 +145,133 @@ impl Default for WeaponMovesets {
         let mut movesets = HashMap::new();
 
         // === SWORD: Fast, wide sweeps, 4-hit combo ===
-        movesets.insert(WeaponType::Sword, vec![
-            AttackData {
-                combo_step: 0,
-                windup: 0.08,
-                active: 0.10,
-                recovery: 0.15,
-                damage_mult: 1.0,
-                hitbox_half_extents: [1.2, 0.8, 1.5],
-                hitbox_offset: 1.5,
-                poise_damage: 15.0,
-                knockback: 1.0,
-                sweep_angle: std::f32::consts::FRAC_PI_2, // 90°
-            },
-            AttackData {
-                combo_step: 1,
-                windup: 0.06,
-                active: 0.10,
-                recovery: 0.12,
-                damage_mult: 1.1,
-                hitbox_half_extents: [1.4, 0.8, 1.5],
-                hitbox_offset: 1.5,
-                poise_damage: 15.0,
-                knockback: 1.2,
-                sweep_angle: std::f32::consts::FRAC_PI_2,
-            },
-            AttackData {
-                combo_step: 2,
-                windup: 0.10,
-                active: 0.12,
-                recovery: 0.18,
-                damage_mult: 1.3,
-                hitbox_half_extents: [1.6, 1.0, 1.8],
-                hitbox_offset: 1.8,
-                poise_damage: 25.0,
-                knockback: 2.0,
-                sweep_angle: std::f32::consts::PI, // 180° finisher
-            },
-            AttackData {
-                combo_step: 3,
-                windup: 0.15,
-                active: 0.15,
-                recovery: 0.30,
-                damage_mult: 1.8,
-                hitbox_half_extents: [2.0, 1.2, 2.0],
-                hitbox_offset: 2.0,
-                poise_damage: 40.0,
-                knockback: 3.5,
-                sweep_angle: std::f32::consts::PI,
-            },
-        ]);
+        movesets.insert(
+            WeaponType::Sword,
+            vec![
+                AttackData {
+                    combo_step: 0,
+                    windup: 0.08,
+                    active: 0.10,
+                    recovery: 0.15,
+                    damage_mult: 1.0,
+                    hitbox_half_extents: [1.2, 0.8, 1.5],
+                    hitbox_offset: 1.5,
+                    poise_damage: 15.0,
+                    knockback: 1.0,
+                    sweep_angle: std::f32::consts::FRAC_PI_2, // 90°
+                },
+                AttackData {
+                    combo_step: 1,
+                    windup: 0.06,
+                    active: 0.10,
+                    recovery: 0.12,
+                    damage_mult: 1.1,
+                    hitbox_half_extents: [1.4, 0.8, 1.5],
+                    hitbox_offset: 1.5,
+                    poise_damage: 15.0,
+                    knockback: 1.2,
+                    sweep_angle: std::f32::consts::FRAC_PI_2,
+                },
+                AttackData {
+                    combo_step: 2,
+                    windup: 0.10,
+                    active: 0.12,
+                    recovery: 0.18,
+                    damage_mult: 1.3,
+                    hitbox_half_extents: [1.6, 1.0, 1.8],
+                    hitbox_offset: 1.8,
+                    poise_damage: 25.0,
+                    knockback: 2.0,
+                    sweep_angle: std::f32::consts::PI, // 180° finisher
+                },
+                AttackData {
+                    combo_step: 3,
+                    windup: 0.15,
+                    active: 0.15,
+                    recovery: 0.30,
+                    damage_mult: 1.8,
+                    hitbox_half_extents: [2.0, 1.2, 2.0],
+                    hitbox_offset: 2.0,
+                    poise_damage: 40.0,
+                    knockback: 3.5,
+                    sweep_angle: std::f32::consts::PI,
+                },
+            ],
+        );
 
         // === SPEAR: Long range, narrow, 3-hit combo ===
-        movesets.insert(WeaponType::Spear, vec![
-            AttackData {
-                combo_step: 0,
-                windup: 0.10,
-                active: 0.08,
-                recovery: 0.14,
-                damage_mult: 1.0,
-                hitbox_half_extents: [0.4, 0.4, 2.5],
-                hitbox_offset: 2.5,
-                poise_damage: 20.0,
-                knockback: 1.5,
-                sweep_angle: 0.4, // ~23° narrow thrust
-            },
-            AttackData {
-                combo_step: 1,
-                windup: 0.08,
-                active: 0.10,
-                recovery: 0.12,
-                damage_mult: 1.15,
-                hitbox_half_extents: [0.6, 0.6, 2.8],
-                hitbox_offset: 2.8,
-                poise_damage: 22.0,
-                knockback: 1.8,
-                sweep_angle: 0.5,
-            },
-            AttackData {
-                combo_step: 2,
-                windup: 0.18,
-                active: 0.12,
-                recovery: 0.25,
-                damage_mult: 1.6,
-                hitbox_half_extents: [0.5, 0.5, 3.5],
-                hitbox_offset: 3.2,
-                poise_damage: 35.0,
-                knockback: 4.0,
-                sweep_angle: 0.3, // Very narrow piercing finisher
-            },
-        ]);
+        movesets.insert(
+            WeaponType::Spear,
+            vec![
+                AttackData {
+                    combo_step: 0,
+                    windup: 0.10,
+                    active: 0.08,
+                    recovery: 0.14,
+                    damage_mult: 1.0,
+                    hitbox_half_extents: [0.4, 0.4, 2.5],
+                    hitbox_offset: 2.5,
+                    poise_damage: 20.0,
+                    knockback: 1.5,
+                    sweep_angle: 0.4, // ~23° narrow thrust
+                },
+                AttackData {
+                    combo_step: 1,
+                    windup: 0.08,
+                    active: 0.10,
+                    recovery: 0.12,
+                    damage_mult: 1.15,
+                    hitbox_half_extents: [0.6, 0.6, 2.8],
+                    hitbox_offset: 2.8,
+                    poise_damage: 22.0,
+                    knockback: 1.8,
+                    sweep_angle: 0.5,
+                },
+                AttackData {
+                    combo_step: 2,
+                    windup: 0.18,
+                    active: 0.12,
+                    recovery: 0.25,
+                    damage_mult: 1.6,
+                    hitbox_half_extents: [0.5, 0.5, 3.5],
+                    hitbox_offset: 3.2,
+                    poise_damage: 35.0,
+                    knockback: 4.0,
+                    sweep_angle: 0.3, // Very narrow piercing finisher
+                },
+            ],
+        );
 
         // === HAMMER: Slow, devastating, 2-hit combo ===
-        movesets.insert(WeaponType::Hammer, vec![
-            AttackData {
-                combo_step: 0,
-                windup: 0.20,
-                active: 0.12,
-                recovery: 0.25,
-                damage_mult: 1.5,
-                hitbox_half_extents: [1.0, 1.0, 1.8],
-                hitbox_offset: 1.8,
-                poise_damage: 45.0,
-                knockback: 3.0,
-                sweep_angle: std::f32::consts::FRAC_PI_3, // 60°
-            },
-            AttackData {
-                combo_step: 1,
-                windup: 0.30,
-                active: 0.15,
-                recovery: 0.40,
-                damage_mult: 2.5,
-                hitbox_half_extents: [1.5, 1.5, 2.0],
-                hitbox_offset: 1.5,
-                poise_damage: 80.0,
-                knockback: 5.0,
-                sweep_angle: std::f32::consts::TAU, // 360° ground slam
-            },
-        ]);
+        movesets.insert(
+            WeaponType::Hammer,
+            vec![
+                AttackData {
+                    combo_step: 0,
+                    windup: 0.20,
+                    active: 0.12,
+                    recovery: 0.25,
+                    damage_mult: 1.5,
+                    hitbox_half_extents: [1.0, 1.0, 1.8],
+                    hitbox_offset: 1.8,
+                    poise_damage: 45.0,
+                    knockback: 3.0,
+                    sweep_angle: std::f32::consts::FRAC_PI_3, // 60°
+                },
+                AttackData {
+                    combo_step: 1,
+                    windup: 0.30,
+                    active: 0.15,
+                    recovery: 0.40,
+                    damage_mult: 2.5,
+                    hitbox_half_extents: [1.5, 1.5, 2.0],
+                    hitbox_offset: 1.5,
+                    poise_damage: 80.0,
+                    knockback: 5.0,
+                    sweep_angle: std::f32::consts::TAU, // 360° ground slam
+                },
+            ],
+        );
 
         Self { movesets }
     }
@@ -333,9 +342,9 @@ pub enum ActionType {
 /// Attack angle relative to the target
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AttackAngle {
-    Front,     // 0° ± 45°
-    Side,      // 45°–135°
-    Back,      // 135°–180°
+    Front, // 0° ± 45°
+    Side,  // 45°–135°
+    Back,  // 135°–180°
 }
 
 impl AttackAngle {
@@ -354,11 +363,11 @@ impl AttackAngle {
         let dot = to_attacker.dot(target_forward);
 
         if dot > 0.707 {
-            AttackAngle::Front  // Within ~45° of facing
+            AttackAngle::Front // Within ~45° of facing
         } else if dot < -0.707 {
-            AttackAngle::Back   // Behind target
+            AttackAngle::Back // Behind target
         } else {
-            AttackAngle::Side   // Flanking
+            AttackAngle::Side // Flanking
         }
     }
 
@@ -394,7 +403,7 @@ pub fn calculate_damage(
     attack_data: &AttackData,
     angle: AttackAngle,
     combo_step: u8,
-    semantic_affinity: f32,  // 0.0 = neutral, positive = bonus, negative = resistance
+    semantic_affinity: f32, // 0.0 = neutral, positive = bonus, negative = resistance
     target_blocking: bool,
     target_parrying: bool,
 ) -> DamageCalcResult {
@@ -538,10 +547,7 @@ pub fn point_in_hitbox(
 // ============================================================================
 
 /// System: Update combat state timers every tick
-pub fn update_combat_timers(
-    time: Res<Time>,
-    mut combatants: Query<&mut CombatState>,
-) {
+pub fn update_combat_timers(time: Res<Time>, mut combatants: Query<&mut CombatState>) {
     let dt = time.delta_secs();
 
     for mut state in &mut combatants {
@@ -652,14 +658,16 @@ fn try_attack(
 
     let moveset = match movesets.movesets.get(&weapon.weapon_type) {
         Some(m) => m,
-        None => return CombatActionResult {
-            success: false,
-            action: ActionType::Attack,
-            new_phase: state.phase,
-            combo_step: state.combo_step,
-            attack_data: None,
-            message: "No moveset for weapon".into(),
-        },
+        None => {
+            return CombatActionResult {
+                success: false,
+                action: ActionType::Attack,
+                new_phase: state.phase,
+                combo_step: state.combo_step,
+                attack_data: None,
+                message: "No moveset for weapon".into(),
+            }
+        }
     };
 
     // Determine combo step
@@ -810,14 +818,16 @@ fn try_heavy_attack(
 
     let moveset = match movesets.movesets.get(&weapon.weapon_type) {
         Some(m) => m,
-        None => return CombatActionResult {
-            success: false,
-            action: ActionType::HeavyAttack,
-            new_phase: state.phase,
-            combo_step: state.combo_step,
-            attack_data: None,
-            message: "No moveset for weapon".into(),
-        },
+        None => {
+            return CombatActionResult {
+                success: false,
+                action: ActionType::HeavyAttack,
+                new_phase: state.phase,
+                combo_step: state.combo_step,
+                attack_data: None,
+                message: "No moveset for weapon".into(),
+            }
+        }
     };
 
     // Heavy attack uses the last (finisher) attack with extended windup
@@ -1079,8 +1089,12 @@ mod tests {
         let result = calculate_damage(50.0, attack, AttackAngle::Back, 2, 0.2, false, false);
         // 50 * 1.3 (step 2 mult) * 1.4 (back) * 1.3 (combo) * 1.2 (semantic +0.2)
         let expected = 50.0 * 1.3 * 1.4 * 1.3 * 1.2;
-        assert!((result.final_damage - expected).abs() < 0.1,
-            "Expected {}, got {}", expected, result.final_damage);
+        assert!(
+            (result.final_damage - expected).abs() < 0.1,
+            "Expected {}, got {}",
+            expected,
+            result.final_damage
+        );
     }
 
     #[test]
@@ -1121,7 +1135,10 @@ mod tests {
 
     #[test]
     fn test_poise_break_stagger() {
-        let mut state = CombatState { poise: 10.0, ..Default::default() };
+        let mut state = CombatState {
+            poise: 10.0,
+            ..Default::default()
+        };
         let mut health = 500.0;
 
         let movesets = WeaponMovesets::default();
@@ -1137,7 +1154,7 @@ mod tests {
     fn test_attack_angle_calculation() {
         // Attacker in front of target (target facing attacker)
         let angle = AttackAngle::calculate(
-            Vec3::new(0.0, 0.0, 5.0),  // attacker
+            Vec3::new(0.0, 0.0, 5.0),    // attacker
             0.0,                         // attacker facing
             Vec3::ZERO,                  // target
             std::f32::consts::FRAC_PI_2, // target facing +Z

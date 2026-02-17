@@ -6,20 +6,24 @@
 //! - POST /tower.DestructionService/Rebuild
 //! - POST /tower.DestructionService/GetTemplates
 
-use axum::{Router, Json, extract::State, routing::post};
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 
 use super::ApiState;
-use crate::destruction::{
-    self, DestructionDamageType, FloorDestructionManager,
-};
+use crate::destruction::{self, DestructionDamageType, FloorDestructionManager};
 
 pub fn routes() -> Router<ApiState> {
     Router::new()
         .route("/tower.DestructionService/ApplyDamage", post(apply_damage))
-        .route("/tower.DestructionService/GetFloorState", post(get_floor_state))
+        .route(
+            "/tower.DestructionService/GetFloorState",
+            post(get_floor_state),
+        )
         .route("/tower.DestructionService/Rebuild", post(rebuild))
-        .route("/tower.DestructionService/GetTemplates", post(get_templates))
+        .route(
+            "/tower.DestructionService/GetTemplates",
+            post(get_templates),
+        )
 }
 
 // ============================================================================
@@ -148,15 +152,34 @@ async fn apply_damage(
 
     // Ensure the target exists (spawn if needed for demo)
     if manager.floors.get(&req.floor_id).is_none()
-        || !manager.floors.get(&req.floor_id).unwrap().contains_key(&req.target_entity_id)
+        || !manager
+            .floors
+            .get(&req.floor_id)
+            .unwrap()
+            .contains_key(&req.target_entity_id)
     {
         // Try to create from LMDB template data
-        let _ = manager.spawn("wall_stone_3m", req.floor_id,
-            bevy::math::Vec3::new(req.entity_position[0], req.entity_position[1], req.entity_position[2]));
+        let _ = manager.spawn(
+            "wall_stone_3m",
+            req.floor_id,
+            bevy::math::Vec3::new(
+                req.entity_position[0],
+                req.entity_position[1],
+                req.entity_position[2],
+            ),
+        );
     }
 
-    let impact = bevy::math::Vec3::new(req.impact_point[0], req.impact_point[1], req.impact_point[2]);
-    let entity_pos = bevy::math::Vec3::new(req.entity_position[0], req.entity_position[1], req.entity_position[2]);
+    let impact = bevy::math::Vec3::new(
+        req.impact_point[0],
+        req.impact_point[1],
+        req.impact_point[2],
+    );
+    let entity_pos = bevy::math::Vec3::new(
+        req.entity_position[0],
+        req.entity_position[1],
+        req.entity_position[2],
+    );
 
     match manager.apply_damage(
         req.target_entity_id,
@@ -173,11 +196,14 @@ async fn apply_damage(
 
             // Award mastery XP
             if mastery_xp > 0.0 {
-                let _ = state.pg.add_mastery_experience(
-                    req.player_id as i64,
-                    "DestructionMastery",
-                    mastery_xp as i64,
-                ).await;
+                let _ = state
+                    .pg
+                    .add_mastery_experience(
+                        req.player_id as i64,
+                        "DestructionMastery",
+                        mastery_xp as i64,
+                    )
+                    .await;
             }
 
             // Generate loot from destruction
@@ -194,18 +220,16 @@ async fn apply_damage(
                 error: None,
             })
         }
-        None => {
-            Json(ApplyDamageResponse {
-                success: false,
-                damage_dealt: 0.0,
-                newly_destroyed_clusters: vec![],
-                structural_collapse: false,
-                fragment_mask: vec![],
-                destruction_loot: vec![],
-                mastery_xp: 0.0,
-                error: Some("Target entity not found".to_string()),
-            })
-        }
+        None => Json(ApplyDamageResponse {
+            success: false,
+            damage_dealt: 0.0,
+            newly_destroyed_clusters: vec![],
+            structural_collapse: false,
+            fragment_mask: vec![],
+            destruction_loot: vec![],
+            mastery_xp: 0.0,
+            error: Some("Target entity not found".to_string()),
+        }),
     }
 }
 
@@ -219,27 +243,37 @@ async fn get_floor_state(
 
     let (total, destroyed, pct) = manager.floor_stats(req.floor_id);
 
-    let destructibles = manager.floors.get(&req.floor_id)
+    let destructibles = manager
+        .floors
+        .get(&req.floor_id)
         .map(|floor| {
-            floor.values().map(|d| {
-                DestructibleStateResponse {
-                    entity_id: d.entity_id,
-                    template_id: d.template_id.clone(),
-                    material: format!("{:?}", d.material),
-                    total_hp: d.total_hp(),
-                    max_total_hp: d.max_total_hp(),
-                    collapsed: d.collapsed,
-                    position: [0.0, 0.0, 0.0], // Would come from Transform component
-                    fragment_mask: d.fragment_mask(),
-                    fragment_count: d.fragments.len(),
-                    destroyed_fragment_count: d.destroyed_count(),
-                    supports_rebuild: d.supports_rebuild,
-                    rebuild_progress: d.rebuild_progress,
-                    semantic_tags: d.semantic_tags.iter()
-                        .map(|(tag, weight)| TagPairResponse { tag: tag.clone(), weight: *weight })
-                        .collect(),
-                }
-            }).collect()
+            floor
+                .values()
+                .map(|d| {
+                    DestructibleStateResponse {
+                        entity_id: d.entity_id,
+                        template_id: d.template_id.clone(),
+                        material: format!("{:?}", d.material),
+                        total_hp: d.total_hp(),
+                        max_total_hp: d.max_total_hp(),
+                        collapsed: d.collapsed,
+                        position: [0.0, 0.0, 0.0], // Would come from Transform component
+                        fragment_mask: d.fragment_mask(),
+                        fragment_count: d.fragments.len(),
+                        destroyed_fragment_count: d.destroyed_count(),
+                        supports_rebuild: d.supports_rebuild,
+                        rebuild_progress: d.rebuild_progress,
+                        semantic_tags: d
+                            .semantic_tags
+                            .iter()
+                            .map(|(tag, weight)| TagPairResponse {
+                                tag: tag.clone(),
+                                weight: *weight,
+                            })
+                            .collect(),
+                    }
+                })
+                .collect()
         })
         .unwrap_or_default();
 
@@ -261,24 +295,28 @@ async fn rebuild(
     // Check if entity exists and is collapsed
     let floor = match manager.floors.get_mut(&req.floor_id) {
         Some(f) => f,
-        None => return Json(RebuildResponse {
-            success: false,
-            rebuild_progress: 0.0,
-            fully_repaired: false,
-            mastery_xp: 0.0,
-            error: Some("Floor not found".to_string()),
-        }),
+        None => {
+            return Json(RebuildResponse {
+                success: false,
+                rebuild_progress: 0.0,
+                fully_repaired: false,
+                mastery_xp: 0.0,
+                error: Some("Floor not found".to_string()),
+            })
+        }
     };
 
     let destructible = match floor.get_mut(&req.target_entity_id) {
         Some(d) => d,
-        None => return Json(RebuildResponse {
-            success: false,
-            rebuild_progress: 0.0,
-            fully_repaired: false,
-            mastery_xp: 0.0,
-            error: Some("Entity not found".to_string()),
-        }),
+        None => {
+            return Json(RebuildResponse {
+                success: false,
+                rebuild_progress: 0.0,
+                fully_repaired: false,
+                mastery_xp: 0.0,
+                error: Some("Entity not found".to_string()),
+            })
+        }
     };
 
     if !destructible.supports_rebuild {
@@ -297,11 +335,10 @@ async fn rebuild(
 
     // Award building mastery XP
     let mastery_xp = repair_amount * 100.0; // 100 XP per 0.25 progress
-    let _ = state.pg.add_mastery_experience(
-        req.player_id as i64,
-        "BuildingMastery",
-        mastery_xp as i64,
-    ).await;
+    let _ = state
+        .pg
+        .add_mastery_experience(req.player_id as i64, "BuildingMastery", mastery_xp as i64)
+        .await;
 
     Json(RebuildResponse {
         success: true,
@@ -318,22 +355,31 @@ async fn get_templates(
 ) -> Json<TemplatesResponse> {
     let templates = destruction::default_templates();
 
-    let infos: Vec<TemplateInfo> = templates.iter().map(|t| {
-        let effective_hp = t.base_hp_per_fragment * t.material.hp_multiplier() * t.fragment_count as f32;
-        TemplateInfo {
-            id: t.id.clone(),
-            display_name: t.display_name.clone(),
-            material: format!("{:?}", t.material),
-            fragment_count: t.fragment_count,
-            base_hp: t.base_hp_per_fragment,
-            effective_hp,
-            supports_rebuild: t.supports_rebuild,
-            category: format!("{:?}", t.category),
-            semantic_tags: t.semantic_tags.iter()
-                .map(|(tag, weight)| TagPairResponse { tag: tag.clone(), weight: *weight })
-                .collect(),
-        }
-    }).collect();
+    let infos: Vec<TemplateInfo> = templates
+        .iter()
+        .map(|t| {
+            let effective_hp =
+                t.base_hp_per_fragment * t.material.hp_multiplier() * t.fragment_count as f32;
+            TemplateInfo {
+                id: t.id.clone(),
+                display_name: t.display_name.clone(),
+                material: format!("{:?}", t.material),
+                fragment_count: t.fragment_count,
+                base_hp: t.base_hp_per_fragment,
+                effective_hp,
+                supports_rebuild: t.supports_rebuild,
+                category: format!("{:?}", t.category),
+                semantic_tags: t
+                    .semantic_tags
+                    .iter()
+                    .map(|(tag, weight)| TagPairResponse {
+                        tag: tag.clone(),
+                        weight: *weight,
+                    })
+                    .collect(),
+            }
+        })
+        .collect();
 
     Json(TemplatesResponse { templates: infos })
 }
@@ -348,7 +394,9 @@ fn parse_damage_type(s: &str) -> DestructionDamageType {
         "explosive" | "explosion" | "blast" => DestructionDamageType::Explosive,
         "fire" | "elemental_fire" => DestructionDamageType::ElementalFire,
         "ice" | "elemental_ice" | "frost" => DestructionDamageType::ElementalIce,
-        "lightning" | "elemental_lightning" | "electric" => DestructionDamageType::ElementalLightning,
+        "lightning" | "elemental_lightning" | "electric" => {
+            DestructionDamageType::ElementalLightning
+        }
         "semantic" | "corruption" | "tower" => DestructionDamageType::Semantic,
         _ => DestructionDamageType::Kinetic,
     }
@@ -368,14 +416,17 @@ fn generate_destruction_loot(
     }
 
     let mut loot = Vec::new();
-    let mut rng = req.target_entity_id.wrapping_mul(req.player_id.wrapping_add(1));
+    let mut rng = req
+        .target_entity_id
+        .wrapping_mul(req.player_id.wrapping_add(1));
 
     // Each destroyed cluster has a chance to drop materials
     for &cluster_id in &result.newly_destroyed_clusters {
         rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
         let roll = ((rng >> 33) as f32) / (u32::MAX as f32);
 
-        if roll < 0.6 { // 60% drop chance per cluster
+        if roll < 0.6 {
+            // 60% drop chance per cluster
             // Determine material type from damage type context
             let item_id = match parse_damage_type(&req.damage_type) {
                 DestructionDamageType::ElementalFire => "ash_remnant",

@@ -7,7 +7,7 @@
 //! Both paths use the same validation logic defined here.
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // Input Types
@@ -202,7 +202,11 @@ mod tests {
             InputAction::HeavyAttack,
         ];
         for action in combat_actions {
-            assert!(action.to_combat_action().is_some(), "{:?} should convert", action);
+            assert!(
+                action.to_combat_action().is_some(),
+                "{:?} should convert",
+                action
+            );
         }
     }
 

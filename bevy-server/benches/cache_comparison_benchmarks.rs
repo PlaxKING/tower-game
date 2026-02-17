@@ -6,11 +6,10 @@
 /// 3. CPU Generation - ~569µs (Tier 3: on-demand generation)
 ///
 /// Result: 3-tier with LMDB is optimal (Redis removed as too slow)
-
 use criterion::{criterion_group, criterion_main, Criterion};
+use std::sync::Arc;
 use tower_bevy_server::async_generation::{FloorGenerator, GenerationConfig};
 use tower_bevy_server::lmdb_cache::LmdbFloorCache;
-use std::sync::Arc;
 
 /// Benchmark: Complete 3-tier comparison
 fn bench_complete_comparison(c: &mut Criterion) {
@@ -42,9 +41,7 @@ fn bench_complete_comparison(c: &mut Criterion) {
 
         b.to_async(&runtime).iter(|| {
             let gen_clone = gen.clone();
-            async move {
-                gen_clone.get_or_generate(1, 0x12345678).await.unwrap()
-            }
+            async move { gen_clone.get_or_generate(1, 0x12345678).await.unwrap() }
         });
     });
 
@@ -57,9 +54,7 @@ fn bench_complete_comparison(c: &mut Criterion) {
         // Pre-populate ONCE
         cache.set(1, &chunk).expect("Failed to set floor in LMDB");
 
-        b.iter(|| {
-            cache.get(1).expect("Failed to get floor from LMDB")
-        });
+        b.iter(|| cache.get(1).expect("Failed to get floor from LMDB"));
     });
 
     // Tier 3: CPU Generation (Baseline)
@@ -82,7 +77,10 @@ fn bench_complete_comparison(c: &mut Criterion) {
             let floor_id = floor_id_counter;
 
             async move {
-                gen_clone.get_or_generate(floor_id, 0x12345678 + floor_id as u64).await.unwrap()
+                gen_clone
+                    .get_or_generate(floor_id, 0x12345678 + floor_id as u64)
+                    .await
+                    .unwrap()
             }
         });
     });
@@ -109,28 +107,27 @@ fn bench_lmdb_operations(c: &mut Criterion) {
 
     c.bench_function("lmdb_get_hit", |b| {
         let temp_dir = std::env::temp_dir().join(format!("lmdb_get_hit_{}", std::process::id()));
-        let cache = LmdbFloorCache::new(&temp_dir, 100 * 1024 * 1024).expect("Failed to create LMDB cache");
+        let cache =
+            LmdbFloorCache::new(&temp_dir, 100 * 1024 * 1024).expect("Failed to create LMDB cache");
 
         // Pre-populate
         cache.set(1, &chunk).unwrap();
 
-        b.iter(|| {
-            cache.get(1).unwrap()
-        });
+        b.iter(|| cache.get(1).unwrap());
     });
 
     c.bench_function("lmdb_get_miss", |b| {
         let temp_dir = std::env::temp_dir().join(format!("lmdb_get_miss_{}", std::process::id()));
-        let cache = LmdbFloorCache::new(&temp_dir, 100 * 1024 * 1024).expect("Failed to create LMDB cache");
+        let cache =
+            LmdbFloorCache::new(&temp_dir, 100 * 1024 * 1024).expect("Failed to create LMDB cache");
 
-        b.iter(|| {
-            cache.get(99999)
-        });
+        b.iter(|| cache.get(99999));
     });
 
     c.bench_function("lmdb_set", |b| {
         let temp_dir = std::env::temp_dir().join(format!("lmdb_set_{}", std::process::id()));
-        let cache = LmdbFloorCache::new(&temp_dir, 500 * 1024 * 1024).expect("Failed to create LMDB cache"); // 500MB for intensive writes
+        let cache =
+            LmdbFloorCache::new(&temp_dir, 500 * 1024 * 1024).expect("Failed to create LMDB cache"); // 500MB for intensive writes
         let mut floor_id_counter = 0u32;
 
         b.iter(|| {
@@ -141,7 +138,8 @@ fn bench_lmdb_operations(c: &mut Criterion) {
 
     c.bench_function("lmdb_roundtrip", |b| {
         let temp_dir = std::env::temp_dir().join(format!("lmdb_roundtrip_{}", std::process::id()));
-        let cache = LmdbFloorCache::new(&temp_dir, 500 * 1024 * 1024).expect("Failed to create LMDB cache"); // 500MB for intensive writes
+        let cache =
+            LmdbFloorCache::new(&temp_dir, 500 * 1024 * 1024).expect("Failed to create LMDB cache"); // 500MB for intensive writes
         let mut floor_id_counter = 0u32;
 
         b.iter(|| {
@@ -176,9 +174,7 @@ fn bench_persistence_comparison(c: &mut Criterion) {
         let cache = LmdbFloorCache::new(temp_dir, 100 * 1024 * 1024).unwrap();
         cache.set(1, &chunk).unwrap();
 
-        b.iter(|| {
-            cache.get(1).unwrap()
-        });
+        b.iter(|| cache.get(1).unwrap());
     });
 
     group.finish();
@@ -202,7 +198,10 @@ fn bench_batch_operations(c: &mut Criterion) {
 
         let mut chunks = Vec::new();
         for i in 1..=10 {
-            let chunk = generator.get_or_generate(i, 0x12345678 + i as u64).await.unwrap();
+            let chunk = generator
+                .get_or_generate(i, 0x12345678 + i as u64)
+                .await
+                .unwrap();
             chunks.push(chunk);
         }
         chunks

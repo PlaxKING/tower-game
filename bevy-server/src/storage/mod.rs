@@ -32,20 +32,20 @@
 //! let player = pg.get_player(1).await?;
 //! ```
 
-pub mod lmdb_templates;
 pub mod lmdb_repo_adapter;
+pub mod lmdb_templates;
+pub mod migrations;
+pub mod plugin;
 pub mod postgres;
 pub mod postgres_repo_adapter;
 pub mod repository;
-pub mod migrations;
 pub mod seed_data;
-pub mod plugin;
 
 use std::sync::Arc;
 use tracing::info;
 
-use self::lmdb_templates::LmdbTemplateStore;
 use self::lmdb_repo_adapter::*;
+use self::lmdb_templates::LmdbTemplateStore;
 use self::postgres::PostgresStore;
 use self::postgres_repo_adapter::*;
 use self::repository::StorageManager;

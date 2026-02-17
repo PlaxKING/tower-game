@@ -451,7 +451,5 @@ CREATE TRIGGER trg_player_created
 
 /// Get all migration SQL statements in order
 pub fn get_migrations() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("v1_initial_schema", MIGRATION_V1),
-    ]
+    vec![("v1_initial_schema", MIGRATION_V1)]
 }
